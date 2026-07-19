@@ -2250,6 +2250,11 @@ textarea:focus {
   cursor: pointer;
 }
 
+.chat-launcher-label {
+  display: inline;
+  white-space: nowrap;
+}
+
 .chat-launcher:hover {
   background: var(--sea-deep);
 }
@@ -3082,16 +3087,25 @@ label {
     margin-bottom: var(--space-4);
   }
 
-  .chat-launcher-label {
-    display: none;
+  /* Keep "FAQ & help" label visible on mobile (not icon-only) */
+  .chat-launcher {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    padding: 0.7rem 0.95rem 0.7rem 0.85rem;
+    border-radius: 999px;
+    gap: 0.4rem;
+    max-width: calc(100vw - 1.5rem);
   }
 
-  .chat-launcher {
-    width: 52px;
-    height: 52px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
+  .chat-launcher-label {
+    display: inline;
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+
+  .chat-launcher-icon {
+    font-size: 1.15rem;
+    flex-shrink: 0;
   }
 
   .chat-panel {
