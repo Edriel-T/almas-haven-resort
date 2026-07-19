@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Rooms & rates at Alma's Haven Resort, Dasol. Couple, family, big group & kubo. Message on Facebook to book." />
+  <title>Rooms &amp; Rates · Alma's Haven Resort</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>" />
+</head>
+<body class="page-rooms beach-theme">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-mark">AH</span>
+        <span class="logo-text">
+          <strong>Alma's Haven</strong>
+          <small>Dasol</small>
+        </span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="rooms.html" class="active">Rooms</a>
+        <a href="index.html#availability">Dates</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About</a>
+        <a href="https://web.facebook.com/profile.php?id=100057130492638" class="nav-cta" target="_blank" rel="noopener">Book on FB</a>
+      </nav>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <p class="lp-kicker">Rooms &amp; rates</p>
+        <h1 class="reveal">All rooms</h1>
+        <p class="section-lead reveal">
+          Review every room type, photo, and rate here. Message us on Facebook to book.
+          To change photos or prices later, edit <code>js/rooms-config.js</code> and files in <code>Images/</code>.
+        </p>
+      </div>
+    </section>
+
+    <section class="lp-section" style="padding-top: 0">
+      <div class="container">
+        <div class="room-grid" id="roomsGrid"></div>
+        <p class="lp-note reveal" style="margin-top: 1.5rem">
+          Free cottage with every room. Private CR on all rooms except kubo.
+          One of the two big group rooms has a balcony.
+          Bookings are confirmed via
+          <a href="https://web.facebook.com/profile.php?id=100057130492638" target="_blank" rel="noopener">Facebook message</a>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong class="footer-name">Alma's Haven Resort</strong>
+        <p class="footer-tag">Rooms page · review &amp; update anytime</p>
+      </div>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="gallery.html">Gallery</a>
+
+      </div>
+      <p class="copyright">© <span id="year"></span> Alma's Haven Resort</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/rooms-config.js"></script>
+  <script src="js/room-photos.js"></script>
+  <script src="js/live-agent.js"></script>
+  <script src="js/availability.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/chat-ui.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/booking.js"></script>
+  <script src="js/rooms-render.js"></script>
+  <script src="js/site.js"></script>
+  <script>
+    window.AlmaRooms.renderInto(document.getElementById("roomsGrid"));
+  </script>
+</body>
+</html>

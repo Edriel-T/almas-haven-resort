@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin · Alma's Haven Resort</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>" />
+</head>
+<body class="admin-body">
+  <!-- Login gate -->
+  <div id="adminLogin" class="admin-login">
+    <div class="admin-login-card">
+      <p class="lp-kicker">Private</p>
+      <h1>Admin access</h1>
+      <p class="section-lead">Enter the password to manage availability and room photos.</p>
+      <form id="adminLoginForm">
+        <label>
+          Password
+          <input type="password" id="adminPasswordInput" name="password" required autocomplete="current-password" placeholder="••••••••" />
+        </label>
+        <p class="form-note error" id="adminLoginError" hidden>Incorrect password.</p>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+      </form>
+      <p class="lp-note" style="margin-top:1rem">
+        <a href="index.html">← Back to website</a>
+      </p>
+    </div>
+  </div>
+
+  <div id="adminApp" hidden>
+    <header class="admin-header">
+      <div class="container">
+        <div>
+          <h1>Admin</h1>
+          <p>Availability · live chat · room photos</p>
+        </div>
+        <div class="admin-actions">
+          <label class="admin-online-toggle admin-btn-light">
+            <input type="checkbox" id="agentOnlineToggle" />
+            <span id="agentOnlineLabel">Go online as agent</span>
+          </label>
+          <button type="button" class="btn btn-ghost admin-btn-light" id="adminLogout">Log out</button>
+          <a class="btn btn-ghost admin-btn-light" href="index.html">← Website</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <div class="container">
+        <div class="admin-tabs" role="tablist">
+          <button type="button" class="admin-tab active" data-tab="live" role="tab" aria-selected="true">Live chat <span class="tab-count" id="tabLive"></span></button>
+          <button type="button" class="admin-tab" data-tab="availability" role="tab" aria-selected="false">Availability</button>
+          <button type="button" class="admin-tab" data-tab="photos" role="tab" aria-selected="false">Room photos</button>
+          <button type="button" class="admin-tab" data-tab="inbox" role="tab" aria-selected="false">Inbox <span class="tab-count" id="tabUnread"></span></button>
+        </div>
+
+        <!-- Live chat with guests on the website -->
+        <section id="panel-live" class="admin-panel">
+          <p class="section-lead">
+            Turn <strong>Go online as agent</strong> on so guests can chat here.
+            Guests give their <strong>name</strong> and <strong>what they need</strong> first, then join a
+            <strong>queue</strong> if you're busy. Offline guests go to Facebook only.
+          </p>
+          <div class="live-chat-layout">
+            <aside class="live-chat-list" id="liveChatList"></aside>
+            <div class="live-chat-thread">
+              <header class="live-chat-thread-head" id="liveChatHead">Select a conversation</header>
+              <p class="live-chat-need" id="liveChatNeed" hidden></p>
+              <div class="live-chat-messages" id="liveChatMessages"></div>
+              <div class="live-chat-templates" id="liveChatTemplates" hidden></div>
+              <form class="live-chat-compose" id="liveChatForm" hidden>
+                <input type="text" id="liveChatInput" placeholder="Reply to guest…" autocomplete="off" />
+                <button type="submit" class="btn btn-primary">Send</button>
+                <button type="button" class="btn btn-ghost" id="liveChatAccept" hidden>Accept from queue</button>
+                <button type="button" class="btn btn-ghost" id="liveChatEnd">End chat</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Availability: mark dates not available -->
+        <section id="panel-availability" class="admin-panel" hidden>
+          <div class="admin-cal-toolbar">
+            <label class="admin-field">
+              Room type
+              <select id="adminRoomSelect"></select>
+            </label>
+            <div class="admin-cal-nav">
+              <button type="button" class="btn btn-ghost" id="adminCalPrev">‹ Prev</button>
+              <strong id="adminCalLabel"></strong>
+              <button type="button" class="btn btn-ghost" id="adminCalNext">Next ›</button>
+            </div>
+          </div>
+
+          <p class="section-lead">
+            Click a date to toggle availability (with confirmation):
+            <strong style="color:#1a9a52">green</strong> = available ·
+            <strong style="color:#c43228">red</strong> = not available.
+            Click a red date again to undo and make it green.
+          </p>
+
+          <div class="booking-legend admin-legend">
+            <span><i class="leg available"></i> Available — click to close</span>
+            <span><i class="leg unavailable"></i> Not available — click to reopen</span>
+          </div>
+
+          <div class="admin-cal-wrap">
+            <div class="cal-grid admin-cal-grid" id="adminCalGrid"></div>
+          </div>
+
+          <div class="admin-actions" style="margin-top:1.25rem;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost" id="exportAvail">Export JSON</button>
+            <label class="btn btn-ghost" style="cursor:pointer">
+              Import JSON
+              <input type="file" id="importAvail" accept="application/json,.json" hidden />
+            </label>
+            <button type="button" class="btn btn-primary" id="clearAvail">Clear all marks</button>
+          </div>
+        </section>
+
+        <!-- Room photos for clickable room cards -->
+        <section id="panel-photos" class="admin-panel" hidden>
+          <p class="section-lead">
+            Photos shown when a guest clicks a room card. Put files in the <code>Images/</code> folder,
+            then list paths below (one per line). Leave empty to use the default photos from
+            <code>js/rooms-config.js</code>.
+          </p>
+          <label class="admin-field" style="max-width:420px;margin-bottom:1rem">
+            Room
+            <select id="photoRoomSelect"></select>
+          </label>
+          <label class="admin-field">
+            Image paths (one per line)
+            <textarea id="photoPathsInput" rows="6" placeholder="Images/Couple room.jpg&#10;Images/Family room - 4pax.jpg"></textarea>
+          </label>
+          <p class="lp-note" id="photoDefaultsHint"></p>
+          <div class="admin-photo-preview" id="photoPreview"></div>
+          <div class="admin-actions" style="margin-top:1rem;flex-wrap:wrap">
+            <button type="button" class="btn btn-primary" id="photoSave">Save photos for room</button>
+            <button type="button" class="btn btn-ghost" id="photoReset">Reset to defaults</button>
+          </div>
+        </section>
+
+        <!-- Inbox -->
+        <section id="panel-inbox" class="admin-panel" hidden>
+          <div class="admin-stats">
+            <div class="stat-card"><strong id="statTotal">0</strong><span>Total requests</span></div>
+            <div class="stat-card"><strong id="statUnread">0</strong><span>Unread</span></div>
+            <div class="stat-card"><strong id="statReservations">0</strong><span>Reservations</span></div>
+          </div>
+          <div class="admin-actions" style="margin-bottom:1rem">
+            <button type="button" class="btn btn-ghost" id="markAll">Mark all read</button>
+            <button type="button" class="btn btn-primary" id="clearAll">Clear inbox</button>
+          </div>
+          <div class="inbox-list" id="inboxList"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/rooms-config.js"></script>
+  <script src="js/room-photos.js"></script>
+  <script src="js/live-agent.js"></script>
+  <script src="js/availability.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
