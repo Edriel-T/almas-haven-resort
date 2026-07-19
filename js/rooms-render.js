@@ -49,10 +49,10 @@
         <div class="room-body">
           <div class="room-card-top">
             <h3>${room.name}</h3>
-            <span class="room-count">${room.count}×</span>
+            <span class="room-count">${room.count === 1 ? "1 available" : `${room.count} available`}</span>
           </div>
-          <p class="room-pax">${room.pax} guests max${room.hasBalcony ? " · 1 room has balcony" : ""}</p>
-          <p class="room-price"><span>₱</span>${room.price.toLocaleString("en-PH")}<small>/night</small></p>
+          <p class="room-pax">${room.pax} guests max · price per room${room.hasBalcony ? " · 1 has balcony" : ""}</p>
+          <p class="room-price"><span>₱</span>${room.price.toLocaleString("en-PH")}<small>/room /night</small></p>
           <ul class="room-facts">${amenityChips(room)}</ul>
           <button type="button" class="btn btn-ghost btn-block" data-view-room="${room.id}">
             View photos

@@ -19,13 +19,13 @@
     const rooms = (window.ALMA_CONFIG && window.ALMA_CONFIG.rooms) || [];
     if (!rooms.length) {
       return [
-        "Here are our room rates (per room, per night):",
+        "Here are our room rates (price is per room, per night — not for all rooms combined):",
         "",
-        "• 1st floor — Couple Room: up to 2 guests · ₱2,500",
-        "• 1st floor — Family Room: up to 4 guests · ₱3,500 (3 rooms)",
-        "• 2nd floor — Family Room: up to 6 guests · ₱4,500 (4 rooms)",
-        "• 3rd floor — Big Group Room: up to 15 guests · ₱9,500 (2 rooms; 1 has a balcony)",
-        "• Kubo Room: up to 4 guests · ₱3,500 (no private CR)",
+        "• 1st floor — Couple Room (up to 2 guests): ₱2,500 per room · 1 room available",
+        "• 1st floor — Family Room (up to 4 guests): ₱3,500 per room · 3 rooms available",
+        "• 2nd floor — Family Room (up to 6 guests): ₱4,500 per room · 4 rooms available",
+        "• 3rd floor — Big Group Room (up to 15 guests): ₱9,500 per room · 2 rooms available (1 has a balcony)",
+        "• Kubo Room (up to 4 guests): ₱3,500 per room · 1 room available (no private CR)",
         "",
         "All rooms are air-conditioned and include a free cottage.",
         "Private CR on all rooms except the kubo. Parking is in front of your room.",
@@ -34,14 +34,18 @@
     const lines = rooms.map((r) => {
       const extras = [];
       if (!r.privateCr) extras.push("no private CR");
-      if (r.hasBalcony) extras.push("1 room has balcony");
+      if (r.hasBalcony) extras.push("1 of these has a balcony");
       if (r.hasTv) extras.push("TV");
-      if (r.hasRef) extras.push("ref");
-      const extra = extras.length ? ` (${extras.join(", ")})` : "";
-      return `• ${r.floor} — ${r.name}: up to ${r.pax} guests · ₱${r.price.toLocaleString("en-PH")} · ${r.count} unit(s)${extra}`;
+      if (r.hasRef) extras.push("refrigerator");
+      const extra = extras.length ? ` · ${extras.join(", ")}` : "";
+      const units =
+        r.count === 1
+          ? "1 room available"
+          : `${r.count} rooms available`;
+      return `• ${r.floor} — ${r.name} (up to ${r.pax} guests): ₱${r.price.toLocaleString("en-PH")} per room · ${units}${extra}`;
     });
     return [
-      "Here are our room rates (per room, per night):",
+      "Here are our room rates (price is per room, per night — not for all rooms combined):",
       "",
       ...lines,
       "",

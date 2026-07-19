@@ -39,13 +39,13 @@
           );
         }
         return [
-          "Here are our room rates (per room, per night):",
+          "Here are our room rates (price is per room, per night — not for all rooms combined):",
           "",
-          "• 1st floor — Couple Room: up to 2 guests · ₱2,500",
-          "• 1st floor — Family Room: up to 4 guests · ₱3,500 (3 rooms)",
-          "• 2nd floor — Family Room: up to 6 guests · ₱4,500 (4 rooms)",
-          "• 3rd floor — Big Group Room: up to 15 guests · ₱9,500 (2 rooms; 1 has a balcony)",
-          "• Kubo Room: up to 4 guests · ₱3,500 (no private CR)",
+          "• 1st floor — Couple Room (up to 2 guests): ₱2,500 per room · 1 room available",
+          "• 1st floor — Family Room (up to 4 guests): ₱3,500 per room · 3 rooms available",
+          "• 2nd floor — Family Room (up to 6 guests): ₱4,500 per room · 4 rooms available",
+          "• 3rd floor — Big Group Room (up to 15 guests): ₱9,500 per room · 2 rooms available (1 has a balcony)",
+          "• Kubo Room (up to 4 guests): ₱3,500 per room · 1 room available (no private CR)",
           "",
           "All rooms are air-conditioned and include a free cottage.",
           "Private CR on all rooms except the kubo. Parking is in front of your room.",
@@ -71,13 +71,13 @@
       answer: [
         "We have a 3-floor beachfront building plus one kubo:",
         "",
-        "• 1st floor: 3 family rooms (4 guests) and 1 couple room",
-        "• 2nd floor: 4 family rooms (6 guests)",
-        "• 3rd floor: 2 big group rooms (15 guests) — one has a balcony",
+        "• 1st floor: 3 family rooms (4 guests each) and 1 couple room",
+        "• 2nd floor: 4 family rooms (6 guests each)",
+        "• 3rd floor: 2 big group rooms (15 guests each) — one has a balcony",
         "• Kubo: 1 room for 4 guests (no private CR)",
         "",
         "Every booking includes a free cottage. All rooms are air-conditioned.",
-        "Ask “What are your room rates?” for full pricing.",
+        "Prices are per room, per night. Ask “What are your room rates?” for full pricing.",
       ].join("\n"),
     },
     {
@@ -167,7 +167,7 @@
       id: "groundfloor",
       keywords: ["ground", "baba", "downstairs", "first floor", "1st floor", "easy access", "stairs", "lower"],
       answer:
-        "1st floor has 4 rooms with easy access: 3 family rooms for 4 pax at ₱3,500 and 1 couple room at ₱2,500. All AC, private CR, free cottage, parking in front. Many guests prefer these for convenience.",
+        "1st floor has easy access: 3 family rooms (up to 4 guests each) at ₱3,500 per room, and 1 couple room at ₱2,500 per room. All are AC with private CR, free cottage, and parking in front.",
     },
     {
       id: "reserve",
