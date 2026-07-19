@@ -2553,6 +2553,136 @@ body.modal-open {
   color: var(--muted);
 }
 
+/* Compact booking form on small screens */
+@media (max-width: 720px) {
+  .booking-modal {
+    padding: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .book-form-card {
+    width: 100%;
+    max-height: min(88vh, 100%);
+    overflow-y: auto;
+    padding: 1rem 0.9rem 0.9rem;
+    border-radius: 16px 16px 12px 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .book-form-card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .book-form-room {
+    font-size: 0.82rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .book-form-lead {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .book-form-card .form-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .book-form-card label {
+    font-size: 0.78rem;
+    gap: 0.25rem;
+  }
+
+  .book-form-card input,
+  .book-form-card select,
+  .book-form-card textarea {
+    padding: 0.55rem 0.65rem;
+    font-size: 0.9rem;
+  }
+
+  .book-form-card .fb-instruct-box {
+    padding: 0.6rem 0.75rem;
+    margin: 0.15rem 0;
+  }
+
+  .book-form-card .fb-instruct-box > strong {
+    font-size: 0.8rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .book-form-card .fb-steps {
+    font-size: 0.78rem;
+    padding-left: 1.2rem !important;
+    line-height: 1.4;
+  }
+
+  .book-form-card .fb-steps li {
+    margin-bottom: 0.25rem;
+  }
+
+  .book-form-card .book-preview-box {
+    padding: 0.55rem 0.65rem;
+  }
+
+  .book-form-card .fb-message-preview {
+    max-height: 72px;
+    font-size: 0.72rem;
+    padding: 0.45rem 0.5rem;
+  }
+
+  .book-form-card .preview-head {
+    margin-bottom: 0.3rem;
+  }
+
+  .book-form-card .modal-actions {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.15rem;
+  }
+
+  .book-form-card .modal-actions .btn {
+    flex: 1 1 auto;
+    min-width: calc(50% - 0.25rem);
+    padding: 0.65rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .book-form-card .modal-actions .btn-primary {
+    flex: 1 1 100%;
+  }
+
+  .booking-close {
+    top: 0.45rem;
+    right: 0.5rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
+  }
+
+  /* Agent offline form (chat) also compact on mobile */
+  #agentModal .modal-card {
+    width: 100%;
+    max-height: min(88vh, 100%);
+    overflow-y: auto;
+    padding: 1rem 0.9rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #agentModal .fb-message-preview {
+    max-height: 72px;
+    font-size: 0.72rem;
+  }
+
+  #agentModal .fb-steps {
+    font-size: 0.78rem;
+  }
+
+  #agentModal .fb-instruct-box {
+    padding: 0.6rem 0.75rem;
+  }
+}
+
 .book-form-card .optional {
   font-weight: 500;
   color: var(--muted);

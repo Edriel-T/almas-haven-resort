@@ -149,7 +149,7 @@
         "white sand",
       ],
       answer:
-        "Beachfront resort with all-AC rooms, private CR (except kubo), free cottage with every booking, parking in front. Family rooms also have TV and refrigerator. Check the public calendar (green = available), then message us on Facebook to book.",
+        "Beachfront resort with all-AC rooms, private CR (except kubo), free cottage with every booking, and parking in front of your room. Check the public calendar (green = available), then message us on Facebook to book.",
     },
     {
       id: "colibra",

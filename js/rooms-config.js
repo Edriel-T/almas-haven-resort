@@ -24,8 +24,8 @@
       pax: 4,
       price: 3500,
       privateCr: true,
-      hasTv: true,
-      hasRef: true,
+      hasTv: false,
+      hasRef: false,
       notes: "Easy ground-floor access",
       image: "Images/Family room - 4pax.jpg",
       images: [
@@ -35,8 +35,6 @@
       amenities: [
         "Air-conditioned",
         "Private CR",
-        "TV",
-        "Refrigerator",
         "Free cottage",
         "Parking in front",
       ],
@@ -70,8 +68,8 @@
       pax: 6,
       price: 4500,
       privateCr: true,
-      hasTv: true,
-      hasRef: true,
+      hasTv: false,
+      hasRef: false,
       notes: "Spacious for families & friends",
       image: "Images/Family room - 6pax.jpg",
       images: [
@@ -81,8 +79,6 @@
       amenities: [
         "Air-conditioned",
         "Private CR",
-        "TV",
-        "Refrigerator",
         "Free cottage",
         "Parking in front",
       ],
