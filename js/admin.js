@@ -464,12 +464,27 @@
 
     document.getElementById("liveChatEnd")?.addEventListener("click", () => {
       if (!activeLiveChatId) return;
-      if (!confirm("End this chat? The next guest in the queue will be connected.")) return;
-      Live.closeChat(activeLiveChatId);
+      if (!confirm("End this chat? It will be saved to Inbox. The next guest in the queue will be connected."))
+        return;
+      const endedId = activeLiveChatId;
+      // Same inbox path as when the guest ends the chat
+      if (typeof Live.endChatByAgent === "function") {
+        Live.endChatByAgent(endedId);
+      } else {
+        Live.closeChat(endedId, "agent");
+      }
       activeLiveChatId = null;
       renderLiveList();
       renderLiveThread(null);
-      toast("Chat ended.");
+      toast("Chat ended — saved to Inbox.");
+      // Nudge inbox UI if that panel is already open
+      try {
+        window.dispatchEvent(
+          new CustomEvent("alma:inbox-updated", { detail: { source: "agent-end", chatId: endedId } })
+        );
+      } catch {
+        /* ignore */
+      }
     });
 
     // Template chips (label on button, full formatted text sent)
@@ -1312,6 +1327,19 @@
       if (item.channel) {
         rows.push(
           `<div class="inbox-detail-row"><span>Channel</span><strong>${escapeHtml(item.channel)}</strong></div>`
+        );
+      }
+      if (item.endedBy) {
+        const endedLabel =
+          item.endedBy === "guest"
+            ? "Guest"
+            : item.endedBy === "timeout"
+              ? "Inactivity (auto)"
+              : item.endedBy === "agent"
+                ? "Agent"
+                : item.endedBy;
+        rows.push(
+          `<div class="inbox-detail-row"><span>Ended by</span><strong>${escapeHtml(endedLabel)}</strong></div>`
         );
       }
       if (item.createdAt) {

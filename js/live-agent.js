@@ -226,6 +226,8 @@
               } catch {
                 /* ignore */
               }
+              // If another device ends a chat (agent or guest), archive it here too
+              archiveNewlyClosedChats(chats);
               broadcast("chats", null);
             },
             (err) => console.warn("[LiveAgent] Chats listener:", err.message)
@@ -616,16 +618,28 @@
     return chat;
   }
 
+  function normalizeEndedBy(who, chat) {
+    const raw = who || (chat && chat.closedReason) || "agent";
+    if (raw === "guest") return "guest";
+    if (raw === "timeout") return "timeout";
+    return "agent";
+  }
+
+  function endedByLabel(who) {
+    if (who === "guest") return "Guest";
+    if (who === "timeout") return "Inactivity (10 min)";
+    return "Agent";
+  }
+
   function formatChatTranscript(chat, who) {
     const fullName =
       [chat.firstName, chat.lastName].filter(Boolean).join(" ") ||
       chat.guestName ||
       "Guest";
-    const endedBy =
-      who === "guest" ? "Guest" : who === "timeout" ? "Inactivity (10 min)" : "Agent";
+    const ended = normalizeEndedBy(who, chat);
     const lines = [
       "— Live chat ended —",
-      `Ended by: ${endedBy}`,
+      `Ended by: ${endedByLabel(ended)}`,
       `Guest: ${fullName}`,
       chat.email || chat.guestContact
         ? `Email: ${chat.email || chat.guestContact}`
@@ -636,18 +650,49 @@
     ].filter((x) => x !== null);
 
     (chat.messages || []).forEach((m) => {
-      if (m.from === "system") return; // keep inbox shorter
-      const from = m.from === "guest" ? "Guest" : m.from === "agent" ? "Agent" : "System";
+      // Include the final end notice so agent/guest end is visible in transcript
+      const isEndNotice =
+        m.from === "system" &&
+        /live chat ended|closed automatically/i.test(String(m.text || ""));
+      if (m.from === "system" && !isEndNotice) return;
+      const from =
+        m.from === "guest" ? "Guest" : m.from === "agent" ? "Agent" : "System";
       const time = m.at
         ? new Date(m.at).toLocaleString(undefined, {
             hour: "2-digit",
             minute: "2-digit",
           })
         : "";
-      const text = String(m.text || "").slice(0, 280);
+      const text = String(m.text || "").slice(0, 400);
       lines.push(`${time} ${from}: ${text}`);
     });
+    if (lines[lines.length - 1] === "Transcript:") {
+      lines.push("(No messages in this chat.)");
+    }
     return lines.join("\n");
+  }
+
+  /** Track status so we only archive on transition → closed (not on every snapshot) */
+  const knownChatStatuses = Object.create(null);
+
+  function rememberChatStatus(chat) {
+    if (chat && chat.id) knownChatStatuses[chat.id] = chat.status || "";
+  }
+
+  function archiveNewlyClosedChats(chats) {
+    if (!chats || typeof chats !== "object") return;
+    Object.keys(chats).forEach((id) => {
+      const c = chats[id];
+      if (!c || typeof c !== "object") return;
+      if (!c.id) c.id = id;
+      const prev = knownChatStatuses[id];
+      const next = c.status || "";
+      knownChatStatuses[id] = next;
+      // Only when we observed a live/queued chat become closed (agent, guest, or timeout)
+      if (next === "closed" && prev && prev !== "closed") {
+        saveChatToInbox(c, c.closedReason || "agent");
+      }
+    });
   }
 
   function guestActivityAt(chat) {
@@ -680,6 +725,7 @@
         at: now,
       });
       chats[chat.id] = chat;
+      rememberChatStatus(chat);
       changed = true;
       saveChatToInbox(chat, "timeout");
     });
@@ -698,21 +744,35 @@
     setTimeout(closeInactiveGuestChats, 5000);
   }
 
-  function saveChatToInbox(chat, who) {
-    if (!window.AlmaNotify || !chat) return;
-    // Avoid duplicate inbox rows if both guest and agent devices close the same chat
+  function saveChatToInbox(chat, who, attempt) {
+    if (!chat || !chat.id) return;
+    const tries = typeof attempt === "number" ? attempt : 0;
+    // Admin/public may load notifications.js just after live-agent — retry briefly
+    if (!window.AlmaNotify || typeof window.AlmaNotify.notifyStaff !== "function") {
+      if (tries < 15) {
+        setTimeout(() => saveChatToInbox(chat, who, tries + 1), 250);
+      } else {
+        console.warn("[LiveAgent] Could not save ended chat to inbox — AlmaNotify missing");
+      }
+      return;
+    }
+    // Avoid duplicate inbox rows if guest + agent (or multi-device) both close
     const inboxId = `live_end_${chat.id}`;
     try {
       const existing = window.AlmaNotify.loadInbox() || [];
-      if (existing.some((i) => i.id === inboxId || i.chatId === chat.id)) return;
+      if (existing.some((i) => i.id === inboxId || (i.chatId && i.chatId === chat.id))) {
+        return;
+      }
     } catch {
       /* ignore */
     }
-    const transcript = formatChatTranscript(chat, who);
+    const ended = normalizeEndedBy(who, chat);
+    const transcript = formatChatTranscript(chat, ended);
     const fullName =
       [chat.firstName, chat.lastName].filter(Boolean).join(" ") ||
       chat.guestName ||
       "Guest";
+    const topicBase = chat.topic || chat.need || "live_chat";
     window.AlmaNotify
       .notifyStaff({
         id: inboxId,
@@ -723,45 +783,89 @@
         lastName: chat.lastName || "",
         contact: chat.email || chat.guestContact || "",
         email: chat.email || chat.guestContact || "",
-        topic: chat.topic || "live_chat",
+        topic: `${topicBase} · ended by ${endedByLabel(ended)}`,
         message: transcript,
         channel: "live_chat",
+        endedBy: ended,
       })
-      .catch(() => {
-        /* ignore */
+      .then(() => {
+        try {
+          window.dispatchEvent(
+            new CustomEvent("alma:inbox-updated", {
+              detail: { source: "live-chat-ended", chatId: chat.id, endedBy: ended },
+            })
+          );
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch((err) => {
+        console.warn("[LiveAgent] Inbox save failed:", err && err.message);
       });
   }
 
+  /**
+   * End a chat (agent, guest, or timeout). Always archives to staff inbox —
+   * same path for agent end and guest end.
+   */
   function closeChat(chatId, by) {
+    if (!chatId) return null;
     ensureAuthForWrite();
     const chats = loadChats();
-    if (!chats[chatId]) return;
-    if (chats[chatId].status === "closed") return;
-    const who = by === "guest" ? "guest" : by === "timeout" ? "timeout" : "agent";
-    chats[chatId].status = "closed";
-    chats[chatId].updatedAt = Date.now();
-    chats[chatId].closedReason = who;
-    chats[chatId].messages = chats[chatId].messages || [];
-    const endText =
-      who === "guest"
-        ? "Live chat ended by the guest."
-        : who === "timeout"
-          ? "Live chat closed automatically after 10 minutes of guest inactivity."
-          : "Live chat ended by the agent.";
-    chats[chatId].messages.push({
-      id: uid("m"),
-      from: "system",
-      text: endText,
-      at: Date.now(),
-    });
-    const closed = chats[chatId];
-    saveChats(chats);
-    saveChatToInbox(closed, who);
-    promoteNextInQueue();
+    const chat = chats[chatId];
+    if (!chat) {
+      console.warn("[LiveAgent] closeChat: chat not found", chatId);
+      return null;
+    }
+    const who = normalizeEndedBy(by, chat);
+
+    if (chat.status !== "closed") {
+      chat.status = "closed";
+      chat.updatedAt = Date.now();
+      chat.closedReason = who;
+      chat.messages = chat.messages || [];
+      const endText =
+        who === "guest"
+          ? "Live chat ended by the guest."
+          : who === "timeout"
+            ? "Live chat closed automatically after 10 minutes of guest inactivity."
+            : "Live chat ended by the agent.";
+      // Avoid duplicate end system lines if close is retried
+      const alreadyNoted = chat.messages.some(
+        (m) => m.from === "system" && /live chat ended|closed automatically/i.test(String(m.text || ""))
+      );
+      if (!alreadyNoted) {
+        chat.messages.push({
+          id: uid("m"),
+          from: "system",
+          text: endText,
+          at: Date.now(),
+        });
+      }
+      chats[chatId] = chat;
+      rememberChatStatus(chat);
+      saveChats(chats);
+      promoteNextInQueue();
+    } else if (!chat.closedReason) {
+      chat.closedReason = who;
+      chats[chatId] = chat;
+      rememberChatStatus(chat);
+      saveChats(chats);
+    } else {
+      rememberChatStatus(chat);
+    }
+
+    // Always try inbox (idempotent) — agent end and guest end both land here
+    saveChatToInbox(chat, who);
+    return chat;
   }
 
   function endChatByGuest(chatId) {
-    closeChat(chatId, "guest");
+    return closeChat(chatId, "guest");
+  }
+
+  function endChatByAgent(chatId) {
+    return closeChat(chatId, "agent");
   }
 
   function facebookPageUrl() {
@@ -866,6 +970,8 @@
     acceptChat,
     closeChat,
     endChatByGuest,
+    endChatByAgent,
+    saveChatToInbox,
     promoteNextInQueue,
     openFacebookWithMessage,
     copyText,

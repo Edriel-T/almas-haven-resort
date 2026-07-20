@@ -234,13 +234,20 @@
       guests: data.guests || "",
       channel: data.channel || "",
       roomType: data.roomType || "",
+      endedBy: data.endedBy || "",
       read: false,
       createdAt: new Date().toISOString(),
     };
 
     const inbox = loadInbox();
-    // Skip exact id duplicates (e.g. same ended chat saved twice)
-    if (inbox.some((i) => i.id === item.id)) {
+    // Skip duplicates by id or same live-chat (guest end + agent end race)
+    if (
+      inbox.some(
+        (i) =>
+          i.id === item.id ||
+          (item.chatId && i.chatId && i.chatId === item.chatId && i.type === "live_chat_ended")
+      )
+    ) {
       return { item, skipped: true };
     }
     inbox.unshift(item);
@@ -250,7 +257,11 @@
       item.type === "reservation"
         ? "New reservation request"
         : item.type === "live_chat_ended"
-          ? "Live chat ended"
+          ? item.endedBy === "agent"
+            ? "Live chat ended by agent"
+            : item.endedBy === "guest"
+              ? "Live chat ended by guest"
+              : "Live chat ended"
           : "New inbox message";
     showBrowserNotification(
       title,
