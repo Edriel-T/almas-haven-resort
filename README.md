@@ -44,22 +44,26 @@ To change the couple room photo: replace `Images/Couple room.jpg` or update the 
 Homepage calendar and admin data use **Firebase Firestore** so phones, PCs, and guests see the same availability.  
 Setup checklist: **[FIREBASE.md](FIREBASE.md)**. Auth passwords are never committed to this repository.
 
-## SEO (make the site findable)
+## Production & SEO
+
+Full go-live checklist (secrets, Firestore rules, Google Search Console): **[PRODUCTION.md](PRODUCTION.md)**
 
 | File | Purpose |
 |------|---------|
 | `robots.txt` | Allows Google to index public pages; blocks admin |
-| `sitemap.xml` | List of pages for search engines |
-| Meta / Open Graph | Better titles, descriptions, Facebook/Twitter share previews |
-| JSON-LD | Resort business data (home) + FAQ schema (faq page) |
+| `sitemap.xml` | Pages + image hints for search engines |
+| Meta / Open Graph / Twitter | Titles, descriptions, share previews |
+| JSON-LD | LodgingBusiness, WebSite, FAQ, rooms, breadcrumbs |
+| `site.webmanifest` | App name / theme for mobile |
+| Deploy workflow | Injects Firebase from **GitHub secrets** only; strips passwords |
 
-### Submit to Google (recommended)
-1. Go to [Google Search Console](https://search.google.com/search-console)
-2. Add property: `https://almashaven.edrielcabansi.com/`
-3. Submit sitemap: `https://almashaven.edrielcabansi.com/sitemap.xml`
-4. Request indexing for the homepage
+### Submit to Google (required for ranking)
+1. [Google Search Console](https://search.google.com/search-console) → add `https://almashaven.edrielcabansi.com/`
+2. Submit sitemap: `https://almashaven.edrielcabansi.com/sitemap.xml`
+3. Request indexing for Home, Rooms, Location
+4. Keep **Google Business Profile** updated (local “Dasol resort” ranking)
 
-Also keep your **Google Business Profile** for the resort updated and linked — that helps local search (“resort Dasol”) more than the website alone.
+**Never commit** Firebase API keys, admin passwords, or service-account JSON.
 
 ## Other JS
 

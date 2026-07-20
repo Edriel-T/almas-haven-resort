@@ -34,51 +34,83 @@
   <meta name="twitter:image" content="https://almashaven.edrielcabansi.com/Images/Homepage%20image.jpg" />
 
   <meta name="theme-color" content="#0c6572" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="manifest" href="site.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>" />
+  <link rel="apple-touch-icon" href="Images/Homepage%20image.jpg" />
 
-  <!-- Structured data for Google (Resort / Lodging) -->
+  <!-- Structured data for Google (Resort + Website) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "LodgingBusiness",
-    "name": "Alma's Haven Resort",
-    "description": "Beachfront resort hotel in Dasol, Pangasinan with air-conditioned rooms, free cottage, and parking in front of your room. Rooms start from ₱2,500 per night.",
-    "url": "https://almashaven.edrielcabansi.com/",
-    "image": [
-      "https://almashaven.edrielcabansi.com/Images/Homepage%20image.jpg",
-      "https://almashaven.edrielcabansi.com/Images/Resort%20Exterior.jpg"
-    ],
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Dasol",
-      "postalCode": "2411",
-      "addressRegion": "Pangasinan",
-      "addressCountry": "PH"
-    },
-    "geo": {
-      "@type": "GeoCoordinates",
-      "latitude": 15.989,
-      "longitude": 119.884
-    },
-    "priceRange": "₱₱",
-    "amenityFeature": [
-      { "@type": "LocationFeatureSpecification", "name": "Air conditioning", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Free cottage with room", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Parking", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Beachfront", "value": true }
-    ],
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "reviewCount": "24",
-      "bestRating": "5"
-    },
-    "sameAs": [
-      "https://web.facebook.com/profile.php?id=100057130492638"
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://almashaven.edrielcabansi.com/#website",
+        "url": "https://almashaven.edrielcabansi.com/",
+        "name": "Alma's Haven Resort",
+        "description": "Beachfront resort in Dasol, Pangasinan — AC rooms from ₱2,500 with free cottage.",
+        "inLanguage": "en-PH",
+        "publisher": { "@id": "https://almashaven.edrielcabansi.com/#business" }
+      },
+      {
+        "@type": ["LodgingBusiness", "Hotel", "Resort"],
+        "@id": "https://almashaven.edrielcabansi.com/#business",
+        "name": "Alma's Haven Resort",
+        "alternateName": "Almas Haven Resort Dasol",
+        "description": "Beachfront resort hotel in Dasol, Pangasinan with air-conditioned rooms, free cottage, and parking in front of your room. Rooms start from ₱2,500 per night.",
+        "url": "https://almashaven.edrielcabansi.com/",
+        "image": [
+          "https://almashaven.edrielcabansi.com/Images/Homepage%20image.jpg",
+          "https://almashaven.edrielcabansi.com/Images/Resort%20Exterior.jpg",
+          "https://almashaven.edrielcabansi.com/Images/Family%20room%20-%204pax.jpg"
+        ],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Dasol",
+          "addressLocality": "Dasol",
+          "postalCode": "2411",
+          "addressRegion": "Pangasinan",
+          "addressCountry": "PH"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 15.989,
+          "longitude": 119.884
+        },
+        "hasMap": "https://www.google.com/maps/search/?api=1&query=WQJJ%2B5M+Dasol+Pangasinan",
+        "priceRange": "₱₱",
+        "currenciesAccepted": "PHP",
+        "paymentAccepted": "Cash, GCash, Bank transfer (confirm on Facebook)",
+        "checkinTime": "14:00",
+        "checkoutTime": "12:00",
+        "amenityFeature": [
+          { "@type": "LocationFeatureSpecification", "name": "Air conditioning", "value": true },
+          { "@type": "LocationFeatureSpecification", "name": "Free cottage with room", "value": true },
+          { "@type": "LocationFeatureSpecification", "name": "Parking", "value": true },
+          { "@type": "LocationFeatureSpecification", "name": "Beachfront", "value": true },
+          { "@type": "LocationFeatureSpecification", "name": "Private bathroom", "value": true }
+        ],
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.9",
+          "reviewCount": "24",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "sameAs": [
+          "https://web.facebook.com/profile.php?id=100057130492638"
+        ],
+        "areaServed": {
+          "@type": "AdministrativeArea",
+          "name": "Dasol, Pangasinan, Philippines"
+        }
+      }
     ]
   }
   </script>

@@ -25,17 +25,17 @@ window.ALMA_CONFIG = {
   facebookMessengerUrl: "",
 
   /**
-   * Local-only default password (used only if Firebase is not configured).
-   * On first successful login the admin must change it; the new password is stored in this browser only.
-   * Production uses Firebase Auth — never commit real Auth passwords here.
+   * Local-only password (ONLY when Firebase is not configured, e.g. offline preview).
+   * Production deploy blanks this. Never put a real production password here.
+   * Live admin uses Firebase Auth email/password only.
    */
-  adminPassword: "ChangeMeOnFirstLogin",
+  adminPassword: "",
 
   /**
-   * Firebase web config is NOT stored here (avoids GitHub secret scanning).
-   * Production: injected at deploy into js/firebase-config.js via GitHub Actions secrets.
-   * Local: copy js/firebase-config.example.js → js/firebase-config.js (gitignored override) or edit the empty file with skip-worktree.
-   * See FIREBASE.md
+   * Firebase web config is NOT stored here (avoids secret scanning).
+   * Production: GitHub Actions writes js/firebase-config.js from repository secrets.
+   * Local: copy js/firebase-config.example.js → js/firebase-config.js (do not commit real keys).
+   * See FIREBASE.md / PRODUCTION.md
    */
   firebase: {},
 

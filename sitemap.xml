@@ -1,43 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://almashaven.edrielcabansi.com/</loc>
+    <xhtml:link rel="alternate" hreflang="en-ph" href="https://almashaven.edrielcabansi.com/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://almashaven.edrielcabansi.com/" />
+    <lastmod>2026-07-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://almashaven.edrielcabansi.com/index.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://almashaven.edrielcabansi.com/Images/Homepage%20image.jpg</image:loc>
+      <image:title>Alma's Haven Resort beachfront in Dasol, Pangasinan</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://almashaven.edrielcabansi.com/rooms.html</loc>
+    <lastmod>2026-07-20</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
+    <image:image>
+      <image:loc>https://almashaven.edrielcabansi.com/Images/Family%20room%20-%204pax.jpg</image:loc>
+      <image:title>Family room at Alma's Haven Resort</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://almashaven.edrielcabansi.com/gallery.html</loc>
+    <lastmod>2026-07-20</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://almashaven.edrielcabansi.com/Images/Resort%20Exterior.jpg</image:loc>
+      <image:title>Resort exterior — Alma's Haven Dasol</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://almashaven.edrielcabansi.com/faq.html</loc>
+    <lastmod>2026-07-20</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://almashaven.edrielcabansi.com/about.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://almashaven.edrielcabansi.com/location.html</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://almashaven.edrielcabansi.com/about.html</loc>
+    <lastmod>2026-07-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://almashaven.edrielcabansi.com/reviews.html</loc>
+    <lastmod>2026-07-20</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
 </urlset>

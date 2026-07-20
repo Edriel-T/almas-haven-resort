@@ -14,5 +14,9 @@ Desktop.ini
 .env.*
 js/firebase-secrets.js
 js/firebase-secrets.local.js
+js/firebase-config.local.js
 **/serviceAccount*.json
 *-firebase-adminsdk-*.json
+**/google-services.json
+**/GoogleService-Info.plist
+.firebase/

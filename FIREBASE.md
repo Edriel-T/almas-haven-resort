@@ -13,15 +13,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /almaHaven/{doc} {
+      // Public site needs calendar / rates / photos
       allow read: if true;
-      allow write: if request.auth != null;
+
+      // Guests (anonymous Auth): live chat presence, chats, inbox only
+      allow write: if request.auth != null &&
+        doc in ['liveChats', 'livePresence', 'inbox'];
+
+      // Staff (email/password): stays, prices, photos, notes, adminMeta, etc.
+      allow write: if request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
   }
 }
 ```
 
-- Everyone can **read** (homepage calendar)  
-- Only signed-in admin can **write**
+- Everyone can **read** (homepage calendar, rates, photos)  
+- **Anonymous guests** may write only live-chat docs  
+- **Staff email accounts** may write all resort data  
+- Never allow unauthenticated writes
 
 ---
 

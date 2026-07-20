@@ -19,7 +19,8 @@
   }
 
   function defaultLocalPassword() {
-    return (window.ALMA_CONFIG && window.ALMA_CONFIG.adminPassword) || "almasadmin";
+    // No hardcoded production password — empty means local login is disabled
+    return (window.ALMA_CONFIG && window.ALMA_CONFIG.adminPassword) || "";
   }
 
   function expectedLocalPassword() {
@@ -187,10 +188,16 @@
         const user = await window.AlmaCloud.signInAdmin(emailInput.value, passInput.value);
         setLoggedIn(true, user && user.email);
         await enterAdminAfterAuth({ localMode: false });
-      } else if (passInput.value === expectedLocalPassword()) {
+      } else if (
+        expectedLocalPassword() &&
+        passInput.value === expectedLocalPassword()
+      ) {
         setLoggedIn(true);
         await enterAdminAfterAuth({ localMode: true });
       } else {
+        err.textContent = expectedLocalPassword()
+          ? "Incorrect password."
+          : "Cloud admin is required. Configure Firebase, or set a local adminPassword for offline preview only.";
         err.hidden = false;
         passInput.focus();
       }
@@ -229,8 +236,13 @@
       err.hidden = false;
       return;
     }
-    if (a === defaultLocalPassword() || a.toLowerCase() === "almasadmin") {
-      err.textContent = "Choose a different password than the default.";
+    if (
+      a.toLowerCase() === "almasadmin" ||
+      a.toLowerCase() === "password" ||
+      a.toLowerCase() === "admin" ||
+      (defaultLocalPassword() && a === defaultLocalPassword())
+    ) {
+      err.textContent = "Choose a stronger, unique password.";
       err.hidden = false;
       return;
     }

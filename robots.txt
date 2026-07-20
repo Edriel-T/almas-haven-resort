@@ -1,8 +1,14 @@
-# Alma's Haven Resort — search engine rules
+# Alma's Haven Resort — https://almashaven.edrielcabansi.com/
+# Public pages are fully indexable by Google and other search engines.
+
 User-agent: *
 Allow: /
 
-# Keep staff admin out of search results
+# Staff admin — do not index
 Disallow: /admin.html
+Disallow: /admin
+
+# Error page utility
+Disallow: /404.html
 
 Sitemap: https://almashaven.edrielcabansi.com/sitemap.xml
