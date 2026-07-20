@@ -21,6 +21,8 @@
   let cloudChats = null;
   let cloudListening = false;
   let pushChatsTimer = null;
+  let pushPresenceTimer = null;
+  let lastPresencePushAt = 0;
 
   function buildRatesText() {
     const rooms = (window.ALMA_CONFIG && window.ALMA_CONFIG.rooms) || [];
@@ -158,7 +160,13 @@
       await window.AlmaCloud.init();
       if (!firebase.apps.length) return false;
       const auth = firebase.auth();
+      // Prefer existing session (admin email/password or guest anonymous)
       if (auth.currentUser) return true;
+      // Wait briefly for restored admin session after refresh
+      if (window.AlmaCloud.waitForAuth) {
+        const user = await window.AlmaCloud.waitForAuth(2500);
+        if (user) return true;
+      }
       // Guests: anonymous auth so Firestore rules (auth != null) allow chat writes
       await auth.signInAnonymously();
       return !!auth.currentUser;
@@ -169,77 +177,123 @@
   }
 
   async function startCloudSync() {
-    if (cloudListening || !cloudReady()) return;
+    if (!cloudReady()) return false;
     try {
       await window.AlmaCloud.init();
-      if (!firebase.apps.length) return;
+      if (!firebase.apps.length) return false;
       const db = getDb();
-      cloudListening = true;
 
-      db.collection("almaHaven")
-        .doc(FS_PRESENCE)
-        .onSnapshot(
-          (snap) => {
-            if (!snap.exists) return;
-            const payload = snap.data();
-            const p = payload && payload.data !== undefined ? payload.data : payload;
-            if (!p || typeof p !== "object") return;
+      if (!cloudListening) {
+        cloudListening = true;
+
+        db.collection("almaHaven")
+          .doc(FS_PRESENCE)
+          .onSnapshot(
+            (snap) => {
+              if (!snap.exists) {
+                // No presence doc yet — treat as offline until an agent goes online
+                return;
+              }
+              const payload = snap.data();
+              const p = payload && payload.data !== undefined ? payload.data : payload;
+              if (!p || typeof p !== "object") return;
+              cloudPresence = p;
+              try {
+                localStorage.setItem(PRESENCE_KEY, JSON.stringify(p));
+              } catch {
+                /* ignore */
+              }
+              broadcast("presence", p);
+            },
+            (err) => console.warn("[LiveAgent] Presence listener:", err.message)
+          );
+
+        db.collection("almaHaven")
+          .doc(FS_CHATS)
+          .onSnapshot(
+            (snap) => {
+              if (!snap.exists) return;
+              const payload = snap.data();
+              const chats =
+                payload && payload.data !== undefined ? payload.data : payload;
+              if (!chats || typeof chats !== "object") return;
+              cloudChats = chats;
+              try {
+                localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
+              } catch {
+                /* ignore */
+              }
+              broadcast("chats", null);
+            },
+            (err) => console.warn("[LiveAgent] Chats listener:", err.message)
+          );
+
+        console.info("[LiveAgent] Cloud sync active");
+      }
+
+      // One-time pull so a newly opened admin/guest page gets current status fast
+      try {
+        const snap = await db.collection("almaHaven").doc(FS_PRESENCE).get();
+        if (snap.exists) {
+          const payload = snap.data();
+          const p = payload && payload.data !== undefined ? payload.data : payload;
+          if (p && typeof p === "object") {
             cloudPresence = p;
-            try {
-              localStorage.setItem(PRESENCE_KEY, JSON.stringify(p));
-            } catch {
-              /* ignore */
-            }
+            localStorage.setItem(PRESENCE_KEY, JSON.stringify(p));
             broadcast("presence", p);
-          },
-          (err) => console.warn("[LiveAgent] Presence listener:", err.message)
-        );
+          }
+        }
+      } catch (err) {
+        console.warn("[LiveAgent] Presence pull:", err.message);
+      }
 
-      db.collection("almaHaven")
-        .doc(FS_CHATS)
-        .onSnapshot(
-          (snap) => {
-            if (!snap.exists) return;
-            const payload = snap.data();
-            const chats =
-              payload && payload.data !== undefined ? payload.data : payload;
-            if (!chats || typeof chats !== "object") return;
-            cloudChats = chats;
-            try {
-              localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
-            } catch {
-              /* ignore */
-            }
-            broadcast("chats", null);
-          },
-          (err) => console.warn("[LiveAgent] Chats listener:", err.message)
-        );
-
-      console.info("[LiveAgent] Cloud sync active");
+      return true;
     } catch (err) {
       console.warn("[LiveAgent] Cloud sync failed:", err && err.message);
       cloudListening = false;
+      return false;
     }
   }
 
-  function pushPresenceCloud(p) {
+  function pushPresenceCloud(p, immediate) {
     if (!cloudReady()) return;
-    ensureAuthForWrite().then((ok) => {
-      if (!ok) return;
-      getDb()
-        .collection("almaHaven")
-        .doc(FS_PRESENCE)
-        .set({
-          data: p,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        })
-        .catch((err) => console.warn("[LiveAgent] Presence push:", err.message));
-    });
+    const run = () => {
+      lastPresencePushAt = Date.now();
+      ensureAuthForWrite().then((ok) => {
+        if (!ok) {
+          console.warn("[LiveAgent] Presence not pushed — not signed in");
+          return;
+        }
+        getDb()
+          .collection("almaHaven")
+          .doc(FS_PRESENCE)
+          .set({
+            data: {
+              online: !!p.online,
+              name: p.name || "Resort agent",
+              lastSeen: p.lastSeen || Date.now(),
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          })
+          .then(() => {
+            /* ok */
+          })
+          .catch((err) => console.warn("[LiveAgent] Presence push:", err.message));
+      });
+    };
+    if (immediate) {
+      clearTimeout(pushPresenceTimer);
+      run();
+      return;
+    }
+    // Heartbeats: throttle cloud writes (still update local instantly)
+    clearTimeout(pushPresenceTimer);
+    const wait = Math.max(0, 4000 - (Date.now() - lastPresencePushAt));
+    pushPresenceTimer = setTimeout(run, wait);
   }
 
   function pushChatsCloud(chats) {
     if (!cloudReady()) return;
-    // Debounce rapid message spam
     clearTimeout(pushChatsTimer);
     pushChatsTimer = setTimeout(() => {
       ensureAuthForWrite().then((ok) => {
@@ -265,7 +319,8 @@
     }
   }
 
-  function savePresence(p) {
+  function savePresence(p, options) {
+    const immediate = options && options.immediate;
     cloudPresence = p;
     try {
       localStorage.setItem(PRESENCE_KEY, JSON.stringify(p));
@@ -273,7 +328,7 @@
       /* ignore */
     }
     broadcast("presence", p);
-    pushPresenceCloud(p);
+    pushPresenceCloud(p, immediate);
   }
 
   function isAgentOnline() {
@@ -288,23 +343,36 @@
   }
 
   function goOnline(name) {
-    savePresence({
-      online: true,
-      name: name || "Resort agent",
-      lastSeen: Date.now(),
-    });
+    savePresence(
+      {
+        online: true,
+        name: name || "Resort agent",
+        lastSeen: Date.now(),
+      },
+      { immediate: true }
+    );
+    // Ensure listeners are running on this device
+    startCloudSync();
   }
 
   function heartbeat() {
     const p = loadPresence();
     if (!p || !p.online) return;
     p.lastSeen = Date.now();
-    savePresence(p);
+    // Throttled cloud write so all devices keep TTL fresh without spam
+    savePresence(p, { immediate: false });
   }
 
   function goOffline() {
     const p = loadPresence() || {};
-    savePresence({ ...p, online: false, lastSeen: Date.now() });
+    savePresence(
+      {
+        ...p,
+        online: false,
+        lastSeen: Date.now(),
+      },
+      { immediate: true }
+    );
   }
 
   function loadChats() {
@@ -647,10 +715,12 @@
     return result.chat;
   }
 
-  // Boot cloud listeners when Firebase is ready
+  // Boot cloud listeners when Firebase is ready (retry until config/SDK load)
+  let bootAttempts = 0;
   function bootCloud() {
+    bootAttempts += 1;
     if (!cloudReady()) {
-      setTimeout(bootCloud, 400);
+      if (bootAttempts < 40) setTimeout(bootCloud, 400);
       return;
     }
     startCloudSync();
@@ -661,6 +731,10 @@
   } else {
     bootCloud();
   }
+  // Also retry after window load (firebase-config may inject late on some hosts)
+  window.addEventListener("load", () => {
+    setTimeout(bootCloud, 300);
+  });
 
   window.AlmaLiveAgent = {
     CHANNEL,

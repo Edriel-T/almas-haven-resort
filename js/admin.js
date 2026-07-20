@@ -304,15 +304,25 @@
 
     const toggle = document.getElementById("agentOnlineToggle");
     const label = document.getElementById("agentOnlineLabel");
+    let applyingRemotePresence = false;
 
     function syncToggleUI() {
       const on = Live.isAgentOnline();
-      if (toggle) toggle.checked = on;
+      if (toggle && toggle.checked !== on) {
+        applyingRemotePresence = true;
+        toggle.checked = on;
+        applyingRemotePresence = false;
+      } else if (toggle) {
+        toggle.checked = on;
+      }
       if (label) label.textContent = on ? "● Online" : "Go online";
+      // Any admin device that sees "online" should help keep the heartbeat alive
+      if (on) startHeartbeat();
+      else stopHeartbeat();
     }
 
     function startHeartbeat() {
-      stopHeartbeat();
+      if (agentHbTimer) return;
       agentHbTimer = setInterval(() => Live.heartbeat(), Live.HEARTBEAT_MS);
     }
 
@@ -324,21 +334,33 @@
     }
 
     toggle?.addEventListener("change", () => {
+      if (applyingRemotePresence) return;
       if (toggle.checked) {
         Live.goOnline("Alma's Haven agent");
         startHeartbeat();
-        toast("You are online. Guests can chat on the website.");
+        toast("You are online on all devices. Guests can chat on the website.");
       } else {
         Live.goOffline();
         stopHeartbeat();
-        toast("You are offline. Guests will use Facebook.");
+        toast("You are offline on all devices. Guests will use Facebook.");
       }
       syncToggleUI();
     });
 
-    // Resume online if presence already active
+    // Connect cloud presence ASAP so other devices see the same online status
+    if (typeof Live.startCloudSync === "function") {
+      Live.startCloudSync().then(() => {
+        syncToggleUI();
+        if (Live.isAgentOnline()) {
+          Live.heartbeat();
+          startHeartbeat();
+        }
+      });
+    }
+
+    // Resume online if presence already active (this device or another)
     if (Live.isAgentOnline()) {
-      toggle.checked = true;
+      if (toggle) toggle.checked = true;
       Live.heartbeat();
       startHeartbeat();
     }
@@ -404,14 +426,21 @@
       });
     }
 
-    window.addEventListener("alma:live-agent", () => {
+    window.addEventListener("alma:live-agent", (ev) => {
       renderLiveList();
       if (activeLiveChatId) renderLiveThread(activeLiveChatId);
+      // Presence updates from other devices → keep toggle in sync
       syncToggleUI();
+      const type = ev && ev.detail && ev.detail.type;
+      if (type === "presence" && Live.isAgentOnline() && !agentHbTimer) {
+        startHeartbeat();
+      }
     });
 
     setInterval(() => {
-      if (toggle?.checked) Live.heartbeat();
+      // Keep shared online status fresh while any admin tab is open and online
+      if (Live.isAgentOnline()) Live.heartbeat();
+      syncToggleUI();
       renderLiveList();
       if (activeLiveChatId) renderLiveThread(activeLiveChatId);
     }, 3000);
