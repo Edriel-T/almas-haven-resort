@@ -103,7 +103,7 @@ Requests are always stored in **browser `localStorage`** so `admin.html` works o
 ## Deploy
 
 Upload the whole folder to your host for  
-`https://almashavenresort.edrielcabansi.com`  
+`https://almashaven.edrielcabansi.com`  
 (static hosting is enough — no Node server required).
 
 ## Notes
