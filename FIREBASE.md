@@ -1,92 +1,83 @@
-﻿# Firebase â€” production cloud sync
+# Firebase — Realtime Database cloud sync
 
-Availability, prices, room photos, and admin notes sync via **Firestore**.
+This site uses **Firebase Authentication** + **Realtime Database** (not Firestore).
 
-- **Public site** â†’ read-only cloud data  
-- **Admin** â†’ Firebase Email/Password on `admin.html` (never stored in git)
+Your database URL:
 
----
-
-## Secrets (required â€” not in the repo)
-
-GitHub blocks committed API keys. Values live only in **GitHub Actions secrets**.
-
-### Add repository secrets
-
-Repo â†’ **Settings â†’ Secrets and variables â†’ Actions â†’ New repository secret**
-
-| Secret name | Value (from Firebase web config) |
-|-------------|----------------------------------|
-| `FIREBASE_API_KEY` | `apiKey` |
-| `FIREBASE_AUTH_DOMAIN` | `authDomain` |
-| `FIREBASE_PROJECT_ID` | `projectId` |
-| `FIREBASE_STORAGE_BUCKET` | `storageBucket` |
-| `FIREBASE_MESSAGING_SENDER_ID` | `messagingSenderId` |
-| `FIREBASE_APP_ID` | `appId` |
-| `FIREBASE_MEASUREMENT_ID` | `measurementId` (optional) |
-
-On each push to `main`, the **Deploy GitHub Pages** workflow writes `js/firebase-config.js` into the deploy artifact only (not into git history).
-
-### CLI (optional)
-
-```bash
-gh secret set FIREBASE_API_KEY
-gh secret set FIREBASE_AUTH_DOMAIN
-gh secret set FIREBASE_PROJECT_ID
-gh secret set FIREBASE_STORAGE_BUCKET
-gh secret set FIREBASE_MESSAGING_SENDER_ID
-gh secret set FIREBASE_APP_ID
-gh secret set FIREBASE_MEASUREMENT_ID
-```
+`https://almas-haven-c1998-default-rtdb.asia-southeast1.firebasedatabase.app`
 
 ---
 
-## Firebase Console checklist
+## Realtime Database rules (required)
 
-1. **Authentication** â†’ Email/Password enabled â†’ create admin user  
-2. **Firestore** rules:
+Firebase Console → **Realtime Database → Rules** → Publish:
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /almaHaven/{doc} {
-      allow read: if true;
-      allow write: if request.auth != null;
+```json
+{
+  "rules": {
+    "almaHaven": {
+      ".read": true,
+      ".write": "auth != null"
     }
   }
 }
 ```
 
-3. **Authorized domains:** `almashaven.edrielcabansi.com`, `edriel-t.github.io`, `localhost`  
-4. **Pages source:** GitHub Actions (workflow `deploy-pages.yml`)  
-5. Restrict API key HTTP referrers to your domains (Google Cloud Console)
+- Everyone can **read** (homepage calendar)  
+- Only signed-in admin can **write**
 
 ---
 
-### First admin sign-in
+## Authentication
 
-1. Open `admin.html`
-2. Sign in with your Firebase Authentication user
-3. You **must set a new password** (minimum 8 characters) on first access
-4. That becomes your permanent login password
-
-### Deploy workflow example
-
-Copy `docs/deploy-pages.yml.example` to `.github/workflows/deploy-pages.yml` on GitHub (web UI), then set Pages source to **GitHub Actions**. Secrets are already stored in the repo.
-
-## Local testing
-
-1. Copy `js/firebase-config.example.js` â†’ fill values into `js/firebase-config.js`  
-2. Do **not** commit real keys (`git status` should stay clean; empty stub is what git tracks)  
-3. Prefer `git update-index --skip-worktree js/firebase-config.js` if you keep local keys in that file
+1. **Authentication → Sign-in method → Email/Password → Enable**  
+2. **Users → Add user** (admin email + password)  
+3. **Authorized domains:** `almashaven.edrielcabansi.com`, `edriel-t.github.io`, `localhost`
 
 ---
 
-## If GitHub reports a leaked secret
+## First admin sign-in
 
-1. Remove keys from the repo (done via secrets + empty config)  
-2. **Rotate** the key in Google Cloud Console if it was ever committed  
-3. In GitHub Security alert: mark as **revoked** / resolved after rotate  
-4. History may still be purged; rotate is the important step
+1. Open `admin.html`  
+2. Sign in with Firebase email + password  
+3. **Set a new password** (required once, min 8 characters)  
+4. Badge should show **Cloud: synced**
 
+---
+
+## GitHub secrets
+
+| Secret | Value |
+|--------|--------|
+| `FIREBASE_API_KEY` | from web config |
+| `FIREBASE_AUTH_DOMAIN` | `…firebaseapp.com` |
+| `FIREBASE_PROJECT_ID` | `almas-haven-c1998` |
+| `FIREBASE_STORAGE_BUCKET` | storage bucket |
+| `FIREBASE_MESSAGING_SENDER_ID` | sender id |
+| `FIREBASE_APP_ID` | app id |
+| `FIREBASE_MEASUREMENT_ID` | optional |
+| `FIREBASE_DATABASE_URL` | `https://almas-haven-c1998-default-rtdb.asia-southeast1.firebasedatabase.app` |
+
+Deploy workflow injects these into live `js/firebase-config.js` (see `docs/deploy-pages.yml.example`).
+
+---
+
+## Data layout in RTDB
+
+```
+almaHaven/
+  stays/
+  prices/
+  photos/
+  notes/
+  adminMeta/
+```
+
+---
+
+## API key restriction (recommended)
+
+Google Cloud → Credentials → Browser key → HTTP referrers:
+
+- `https://almashaven.edrielcabansi.com/*`
+- `https://edriel-t.github.io/*`

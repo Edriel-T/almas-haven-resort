@@ -1,12 +1,12 @@
 /**
- * Firebase cloud sync for Alma's Haven.
+ * Firebase cloud sync for Alma's Haven (Realtime Database).
  * Public: read-only listeners (availability, prices, photos).
- * Admin: after site login, signs into Firebase so writes sync to all devices.
+ * Admin: after sign-in, writes sync to all devices.
  *
- * Falls back to localStorage only when Firebase is not configured or offline.
+ * Falls back to localStorage when Firebase is not configured or offline.
  */
 (function () {
-  const COLLECTION = "almaHaven";
+  const ROOT = "almaHaven";
   const DOC_KEYS = {
     stays: "stays",
     prices: "prices",
@@ -25,7 +25,6 @@
   const applyingRemote = Object.create(null);
 
   function firebaseCfg() {
-    // Prefer deploy-injected / local ALMA_FIREBASE; fall back to ALMA_CONFIG.firebase
     const injected = window.ALMA_FIREBASE || {};
     const fromConfig = (window.ALMA_CONFIG && window.ALMA_CONFIG.firebase) || {};
     return Object.assign({}, fromConfig, injected);
@@ -37,7 +36,12 @@
   }
 
   function sdkReady() {
-    return typeof firebase !== "undefined" && firebase.app && firebase.firestore && firebase.auth;
+    return (
+      typeof firebase !== "undefined" &&
+      firebase.app &&
+      firebase.database &&
+      firebase.auth
+    );
   }
 
   function status() {
@@ -47,11 +51,16 @@
       ready,
       writeReady,
       user: auth && auth.currentUser ? auth.currentUser.email : null,
+      engine: "rtdb",
     };
   }
 
   function emitStatus() {
     window.dispatchEvent(new CustomEvent("alma:cloud-status", { detail: status() }));
+  }
+
+  function pathFor(key) {
+    return `${ROOT}/${key}`;
   }
 
   async function init() {
@@ -63,12 +72,17 @@
         return false;
       }
       if (!sdkReady()) {
-        console.warn("[AlmaCloud] Firebase SDK not loaded.");
+        console.warn("[AlmaCloud] Firebase Auth/Database SDK not loaded.");
         emitStatus();
         return false;
       }
       try {
         const c = firebaseCfg();
+        const databaseURL =
+          c.databaseURL ||
+          (c.projectId
+            ? `https://${c.projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`
+            : "");
         if (!firebase.apps.length) {
           app = firebase.initializeApp({
             apiKey: c.apiKey,
@@ -77,22 +91,18 @@
             storageBucket: c.storageBucket || undefined,
             messagingSenderId: c.messagingSenderId || undefined,
             appId: c.appId,
+            databaseURL: databaseURL || undefined,
+            measurementId: c.measurementId || undefined,
           });
         } else {
           app = firebase.app();
         }
-        db = firebase.firestore();
+        db = firebase.database();
         auth = firebase.auth();
-        // Optional: enable offline cache
-        try {
-          await db.enablePersistence({ synchronizeTabs: true });
-        } catch {
-          /* multi-tab or unsupported — ignore */
-        }
         ready = true;
         startPublicListeners();
         emitStatus();
-        console.info("[AlmaCloud] Connected — data syncs across devices.");
+        console.info("[AlmaCloud] Connected to Realtime Database — data syncs across devices.");
         return true;
       } catch (err) {
         console.error("[AlmaCloud] Init failed:", err);
@@ -105,7 +115,6 @@
   }
 
   function startPublicListeners() {
-    // Stays — homepage + admin calendar
     unsubscribers.push(
       listen(DOC_KEYS.stays, (data) => {
         if (!data || !Array.isArray(data.stays)) return;
@@ -119,7 +128,6 @@
       })
     );
 
-    // Prices
     unsubscribers.push(
       listen(DOC_KEYS.prices, (data) => {
         if (!data || typeof data !== "object") return;
@@ -136,7 +144,6 @@
       })
     );
 
-    // Photos
     unsubscribers.push(
       listen(DOC_KEYS.photos, (data) => {
         if (!data || typeof data !== "object") return;
@@ -150,7 +157,6 @@
       })
     );
 
-    // Admin notes (admin UI only needs this, but safe to cache everywhere)
     unsubscribers.push(
       listen(DOC_KEYS.notes, (data) => {
         if (!data || typeof data !== "object") return;
@@ -165,25 +171,21 @@
     );
   }
 
-  function listen(docId, onData) {
+  function listen(key, onData) {
     if (!db) return () => {};
-    return db
-      .collection(COLLECTION)
-      .doc(docId)
-      .onSnapshot(
-        (snap) => {
-          if (!snap.exists) return;
-          const payload = snap.data();
-          if (payload && payload.data !== undefined) onData(payload.data);
-        },
-        (err) => console.warn("[AlmaCloud] Listener error:", docId, err.message)
-      );
+    const ref = db.ref(pathFor(key));
+    const handler = (snap) => {
+      const payload = snap.val();
+      if (payload == null) return;
+      if (payload.data !== undefined) onData(payload.data);
+      else onData(payload);
+    };
+    ref.on("value", handler, (err) => {
+      console.warn("[AlmaCloud] Listener error:", key, err && err.message);
+    });
+    return () => ref.off("value", handler);
   }
 
-  /**
-   * Admin only — sign in so Firestore write rules allow updates.
-   * Pass email/password from the admin login form (never store secrets in the repo).
-   */
   async function signInAdmin(email, password) {
     await init();
     if (!ready || !auth) throw new Error("Firebase is not connected");
@@ -211,27 +213,20 @@
     emitStatus();
   }
 
-  /**
-   * First-login gate: true until admin has changed password once (Firestore flag).
-   */
   async function mustChangePassword() {
     if (!ready || !db || !auth || !auth.currentUser) return false;
     try {
-      const snap = await db.collection(COLLECTION).doc(DOC_KEYS.adminMeta || "adminMeta").get();
-      if (!snap.exists) return true;
-      const payload = snap.data();
+      const snap = await db.ref(pathFor(DOC_KEYS.adminMeta)).once("value");
+      if (!snap.exists()) return true;
+      const payload = snap.val();
       const data = payload && payload.data !== undefined ? payload.data : payload;
       return !(data && data.passwordChanged === true);
     } catch (err) {
       console.warn("[AlmaCloud] mustChangePassword check failed:", err.message);
-      // If we cannot read meta yet, still force change for safety on first setups
       return true;
     }
   }
 
-  /**
-   * Update Firebase Auth password and mark first-change complete in Firestore.
-   */
   async function changeAdminPassword(newPassword) {
     if (!auth || !auth.currentUser) throw new Error("Not signed in");
     const pass = String(newPassword || "");
@@ -239,49 +234,33 @@
     await auth.currentUser.updatePassword(pass);
     writeReady = true;
     if (db) {
-      await db
-        .collection(COLLECTION)
-        .doc("adminMeta")
-        .set(
-          {
-            data: {
-              passwordChanged: true,
-              changedAt: new Date().toISOString(),
-              changedBy: auth.currentUser.email || "admin",
-            },
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedBy: auth.currentUser.email || "admin",
-          },
-          { merge: false }
-        );
+      await db.ref(pathFor(DOC_KEYS.adminMeta)).set({
+        data: {
+          passwordChanged: true,
+          changedAt: new Date().toISOString(),
+          changedBy: auth.currentUser.email || "admin",
+        },
+        updatedAt: Date.now(),
+        updatedBy: auth.currentUser.email || "admin",
+      });
     }
     emitStatus();
     return true;
   }
 
-  /**
-   * Push local document to Firestore (admin must be signed in).
-   * Silent no-op if cloud not ready / applying remote / not signed in.
-   */
-  async function push(docId, data) {
-    if (applyingRemote[docId]) return { ok: false, reason: "remote-apply" };
+  async function push(key, data) {
+    if (applyingRemote[key]) return { ok: false, reason: "remote-apply" };
     if (!ready || !db) return { ok: false, reason: "not-ready" };
     if (!auth || !auth.currentUser) return { ok: false, reason: "not-signed-in" };
     try {
-      await db
-        .collection(COLLECTION)
-        .doc(docId)
-        .set(
-          {
-            data,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedBy: auth.currentUser.email || "admin",
-          },
-          { merge: false }
-        );
+      await db.ref(pathFor(key)).set({
+        data,
+        updatedAt: Date.now(),
+        updatedBy: auth.currentUser.email || "admin",
+      });
       return { ok: true };
     } catch (err) {
-      console.error("[AlmaCloud] Push failed:", docId, err);
+      console.error("[AlmaCloud] Push failed:", key, err);
       return { ok: false, reason: err.message || "push-failed" };
     }
   }
@@ -299,7 +278,6 @@
     return push(DOC_KEYS.notes, data);
   }
 
-  /** One-time upload of current local data after first admin cloud login */
   async function uploadLocalToCloud() {
     if (!auth || !auth.currentUser) {
       throw new Error("Sign in as admin first");
@@ -333,7 +311,8 @@
   }
 
   window.AlmaCloud = {
-    COLLECTION,
+    ROOT,
+    COLLECTION: ROOT,
     DOC_KEYS,
     init,
     isConfigured,
@@ -353,7 +332,6 @@
     },
   };
 
-  // Auto-init for public + admin pages
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       init();
