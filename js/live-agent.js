@@ -1,6 +1,9 @@
 /**
  * Live agent presence + queue + in-site chat.
- * Agent online in Admin; guests give name → need → join queue / connect.
+ * Syncs via Firestore when Firebase is configured (works across devices).
+ * Falls back to localStorage on the same browser only.
+ *
+ * Agent goes online in Admin; guests: name → need → queue / connect.
  * Offline guests → Facebook form.
  */
 (function () {
@@ -10,11 +13,15 @@
   const CHANNEL = "almas-haven-live-agent";
   const HEARTBEAT_MS = 12000;
   const ONLINE_TTL_MS = 35000;
+  const FS_PRESENCE = "livePresence";
+  const FS_CHATS = "liveChats";
 
-  /**
-   * Ready messages for agents (label = button text, text = full reply).
-   * Worded like the FAQ bot — clear, professional, easy to paste.
-   */
+  /** In-memory mirrors updated by Firestore listeners */
+  let cloudPresence = null;
+  let cloudChats = null;
+  let cloudListening = false;
+  let pushChatsTimer = null;
+
   function buildRatesText() {
     const rooms = (window.ALMA_CONFIG && window.ALMA_CONFIG.rooms) || [];
     if (!rooms.length) {
@@ -39,9 +46,7 @@
       if (r.hasRef) extras.push("refrigerator");
       const extra = extras.length ? ` · ${extras.join(", ")}` : "";
       const units =
-        r.count === 1
-          ? "1 room available"
-          : `${r.count} rooms available`;
+        r.count === 1 ? "1 room available" : `${r.count} rooms available`;
       return `• ${r.floor} — ${r.name} (up to ${r.pax} guests): ₱${r.price.toLocaleString("en-PH")} per room · ${units}${extra}`;
     });
     return [
@@ -74,10 +79,10 @@
       text: [
         "We have a 3-floor beachfront building plus one kubo:",
         "",
-        "• 1st floor: 3 family rooms (4 guests) and 1 couple room",
-        "• 2nd floor: 4 family rooms (6 guests)",
+        "• 1st floor: 3 family rooms (5 guests) and 1 couple room",
+        "• 2nd floor: 4 family rooms (7 guests)",
         "• 3rd floor: 2 big group rooms (15 guests) — one has a balcony",
-        "• Kubo: 1 room for 4 guests (no private CR)",
+        "• Kubo: 1 room for 5 guests (no private CR)",
         "",
         "Every booking includes a free cottage. All rooms are air-conditioned.",
       ].join("\n"),
@@ -133,7 +138,126 @@
     window.dispatchEvent(new CustomEvent("alma:live-agent", { detail: { type, payload } }));
   }
 
+  function cloudReady() {
+    return (
+      window.AlmaCloud &&
+      window.AlmaCloud.isConfigured() &&
+      typeof firebase !== "undefined" &&
+      firebase.firestore &&
+      firebase.auth
+    );
+  }
+
+  function getDb() {
+    return firebase.firestore();
+  }
+
+  async function ensureAuthForWrite() {
+    if (!cloudReady()) return false;
+    try {
+      await window.AlmaCloud.init();
+      if (!firebase.apps.length) return false;
+      const auth = firebase.auth();
+      if (auth.currentUser) return true;
+      // Guests: anonymous auth so Firestore rules (auth != null) allow chat writes
+      await auth.signInAnonymously();
+      return !!auth.currentUser;
+    } catch (err) {
+      console.warn("[LiveAgent] Auth for cloud write failed:", err && err.message);
+      return false;
+    }
+  }
+
+  async function startCloudSync() {
+    if (cloudListening || !cloudReady()) return;
+    try {
+      await window.AlmaCloud.init();
+      if (!firebase.apps.length) return;
+      const db = getDb();
+      cloudListening = true;
+
+      db.collection("almaHaven")
+        .doc(FS_PRESENCE)
+        .onSnapshot(
+          (snap) => {
+            if (!snap.exists) return;
+            const payload = snap.data();
+            const p = payload && payload.data !== undefined ? payload.data : payload;
+            if (!p || typeof p !== "object") return;
+            cloudPresence = p;
+            try {
+              localStorage.setItem(PRESENCE_KEY, JSON.stringify(p));
+            } catch {
+              /* ignore */
+            }
+            broadcast("presence", p);
+          },
+          (err) => console.warn("[LiveAgent] Presence listener:", err.message)
+        );
+
+      db.collection("almaHaven")
+        .doc(FS_CHATS)
+        .onSnapshot(
+          (snap) => {
+            if (!snap.exists) return;
+            const payload = snap.data();
+            const chats =
+              payload && payload.data !== undefined ? payload.data : payload;
+            if (!chats || typeof chats !== "object") return;
+            cloudChats = chats;
+            try {
+              localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
+            } catch {
+              /* ignore */
+            }
+            broadcast("chats", null);
+          },
+          (err) => console.warn("[LiveAgent] Chats listener:", err.message)
+        );
+
+      console.info("[LiveAgent] Cloud sync active");
+    } catch (err) {
+      console.warn("[LiveAgent] Cloud sync failed:", err && err.message);
+      cloudListening = false;
+    }
+  }
+
+  function pushPresenceCloud(p) {
+    if (!cloudReady()) return;
+    ensureAuthForWrite().then((ok) => {
+      if (!ok) return;
+      getDb()
+        .collection("almaHaven")
+        .doc(FS_PRESENCE)
+        .set({
+          data: p,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        })
+        .catch((err) => console.warn("[LiveAgent] Presence push:", err.message));
+    });
+  }
+
+  function pushChatsCloud(chats) {
+    if (!cloudReady()) return;
+    // Debounce rapid message spam
+    clearTimeout(pushChatsTimer);
+    pushChatsTimer = setTimeout(() => {
+      ensureAuthForWrite().then((ok) => {
+        if (!ok) return;
+        getDb()
+          .collection("almaHaven")
+          .doc(FS_CHATS)
+          .set({
+            data: chats,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          })
+          .catch((err) => console.warn("[LiveAgent] Chats push:", err.message));
+      });
+    }, 120);
+  }
+
   function loadPresence() {
+    if (cloudPresence) return cloudPresence;
     try {
       return JSON.parse(localStorage.getItem(PRESENCE_KEY) || "null");
     } catch {
@@ -142,8 +266,14 @@
   }
 
   function savePresence(p) {
-    localStorage.setItem(PRESENCE_KEY, JSON.stringify(p));
+    cloudPresence = p;
+    try {
+      localStorage.setItem(PRESENCE_KEY, JSON.stringify(p));
+    } catch {
+      /* ignore */
+    }
     broadcast("presence", p);
+    pushPresenceCloud(p);
   }
 
   function isAgentOnline() {
@@ -178,6 +308,9 @@
   }
 
   function loadChats() {
+    if (cloudChats && typeof cloudChats === "object") {
+      return JSON.parse(JSON.stringify(cloudChats));
+    }
     try {
       return JSON.parse(localStorage.getItem(CHATS_KEY) || "{}");
     } catch {
@@ -186,8 +319,14 @@
   }
 
   function saveChats(chats) {
-    localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
+    cloudChats = chats;
+    try {
+      localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
+    } catch {
+      /* ignore */
+    }
     broadcast("chats", null);
+    pushChatsCloud(chats);
   }
 
   function getGuestId() {
@@ -207,14 +346,12 @@
     return loadChats()[chatId] || null;
   }
 
-  /** Queued guests, oldest first */
   function listQueued() {
     return Object.values(loadChats())
       .filter((c) => c.status === "queued")
       .sort((a, b) => (a.queuedAt || a.createdAt || 0) - (b.queuedAt || b.createdAt || 0));
   }
 
-  /** Active chats (agent is talking) */
   function listActive() {
     return Object.values(loadChats())
       .filter((c) => c.status === "active")
@@ -243,7 +380,6 @@
 
   function promoteNextInQueue() {
     const chats = loadChats();
-    // Only auto-promote if no active chats (single agent desk)
     const hasActive = Object.values(chats).some((c) => c.status === "active");
     if (hasActive) return null;
 
@@ -267,11 +403,10 @@
     return next;
   }
 
-  /**
-   * Join live help after name + need collected.
-   * If agent free → active; if busy → queued with position.
-   */
   function joinQueue({ name, need, topic }) {
+    // Kick off guest auth early so cloud writes work
+    ensureAuthForWrite();
+
     const id = getGuestId();
     const chats = loadChats();
     const guestName = String(name || "Guest").trim() || "Guest";
@@ -283,6 +418,7 @@
       chat.guestName = guestName;
       if (needText) {
         chat.need = needText;
+        chat.messages = chat.messages || [];
         chat.messages.push({
           id: uid("m"),
           from: "guest",
@@ -313,7 +449,6 @@
     };
 
     if (status === "queued") {
-      const pos = listQueued().length + 1; // will be after we add
       chat.messages.push({
         id: uid("m"),
         from: "system",
@@ -341,10 +476,8 @@
     chats[id] = chat;
     saveChats(chats);
 
-    // Recompute position after save
     const position = status === "queued" ? queuePosition(id) : 0;
     if (status === "queued" && position > 0) {
-      // Update queue message with exact position
       chat.messages[0].text = `Hi ${guestName}! You're #${position} in the queue. Please wait — an agent will take you when free.`;
       chats[id] = chat;
       saveChats(chats);
@@ -354,12 +487,10 @@
   }
 
   function addMessage(chatId, from, text) {
+    ensureAuthForWrite();
     const chats = loadChats();
     const chat = chats[chatId];
     if (!chat) return null;
-    if (chat.status === "queued" && from === "guest") {
-      // Guests in queue can still leave notes
-    }
     if (chat.status === "closed") return chat;
     const msg = {
       id: uid("m"),
@@ -368,6 +499,7 @@
       at: Date.now(),
     };
     if (!msg.text) return chat;
+    chat.messages = chat.messages || [];
     chat.messages.push(msg);
     chat.updatedAt = Date.now();
     chats[chatId] = chat;
@@ -376,11 +508,13 @@
   }
 
   function acceptChat(chatId) {
+    ensureAuthForWrite();
     const chats = loadChats();
     const chat = chats[chatId];
     if (!chat) return null;
     chat.status = "active";
     chat.updatedAt = Date.now();
+    chat.messages = chat.messages || [];
     chat.messages.push({
       id: uid("m"),
       from: "system",
@@ -421,24 +555,28 @@
   function saveChatToInbox(chat, who) {
     if (!window.AlmaNotify || !chat) return;
     const transcript = formatChatTranscript(chat, who);
-    window.AlmaNotify.notifyStaff({
-      type: "live_chat_ended",
-      name: chat.guestName || "Guest",
-      contact: chat.guestContact || "(live website chat)",
-      topic: chat.topic || "live_chat",
-      message: transcript,
-    }).catch(() => {
-      /* ignore */
-    });
+    window.AlmaNotify
+      .notifyStaff({
+        type: "live_chat_ended",
+        name: chat.guestName || "Guest",
+        contact: chat.guestContact || "(live website chat)",
+        topic: chat.topic || "live_chat",
+        message: transcript,
+      })
+      .catch(() => {
+        /* ignore */
+      });
   }
 
   function closeChat(chatId, by) {
+    ensureAuthForWrite();
     const chats = loadChats();
     if (!chats[chatId]) return;
     if (chats[chatId].status === "closed") return;
     const who = by === "guest" ? "guest" : "agent";
     chats[chatId].status = "closed";
     chats[chatId].updatedAt = Date.now();
+    chats[chatId].messages = chats[chatId].messages || [];
     chats[chatId].messages.push({
       id: uid("m"),
       from: "system",
@@ -450,9 +588,7 @@
     });
     const closed = chats[chatId];
     saveChats(chats);
-    // Save full conversation to staff inbox
     saveChatToInbox(closed, who);
-    // Next in queue becomes active
     promoteNextInQueue();
   }
 
@@ -502,7 +638,6 @@
     return copied;
   }
 
-  // Legacy createChat → joinQueue
   function createChat(opts) {
     const result = joinQueue({
       name: opts?.name,
@@ -510,6 +645,21 @@
       topic: opts?.topic,
     });
     return result.chat;
+  }
+
+  // Boot cloud listeners when Firebase is ready
+  function bootCloud() {
+    if (!cloudReady()) {
+      setTimeout(bootCloud, 400);
+      return;
+    }
+    startCloudSync();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootCloud);
+  } else {
+    bootCloud();
   }
 
   window.AlmaLiveAgent = {
@@ -543,5 +693,6 @@
     facebookPageUrl,
     formatChatTranscript,
     broadcast,
+    startCloudSync,
   };
 })();

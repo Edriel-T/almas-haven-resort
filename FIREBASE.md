@@ -28,8 +28,10 @@ service cloud.firestore {
 ## Authentication
 
 1. **Authentication → Sign-in method → Email/Password → Enable**  
-2. **Users → Add user** (admin email + password)  
-3. **Authorized domains:** `almashaven.edrielcabansi.com`, `edriel-t.github.io`, `localhost`
+2. **Authentication → Sign-in method → Anonymous → Enable**  
+   (Required for live chat: guests write messages without a staff account)  
+3. **Users → Add user** (admin email + password)  
+4. **Authorized domains:** `almashaven.edrielcabansi.com`, `edriel-t.github.io`, `localhost`
 
 ---
 
@@ -67,8 +69,12 @@ Collection `almaHaven` documents:
 - `stays` — guest occupancy  
 - `prices` — room price overrides  
 - `photos` — room photo overrides  
-- `notes` — admin day notes  
+- `notes` — admin notes (if used)  
 - `adminMeta` — first-login password flag  
+- `livePresence` — live agent online / offline  
+- `liveChats` — live agent queue and messages  
+
+**Live chat:** Enable **Anonymous** sign-in so guests can send messages under the rule `allow write: if request.auth != null`.
 
 ---
 
