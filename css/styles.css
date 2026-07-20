@@ -1,9 +1,9 @@
 /* =========================================================
-   Alma's Haven Resort â€” handcrafted coastal styles
+   Alma's Haven Resort — coastal styles
    ========================================================= */
 
 :root {
-  /* Palette â€” flat coastal, no neon glow */
+  /* Palette — flat coastal */
   --bg: #f4f7f8;
   --bg-2: #e9eef0;
   --paper: #ffffff;
@@ -26,21 +26,27 @@
   --radius: 12px;
   --header-h: 72px;
   --max: 1120px;
-  /* Type â€” standard web scale */
+
+  /* Type system — one scale for all pages */
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --font-body: "DM Sans", system-ui, -apple-system, sans-serif;
-  --text-xs: 0.8125rem;   /* 13px */
-  --text-sm: 0.9375rem;   /* 15px */
-  --text-base: 1.0625rem; /* 17px */
-  --text-lg: 1.125rem;    /* 18px */
-  --text-xl: clamp(1.35rem, 2vw, 1.5rem);
-  --text-2xl: clamp(1.75rem, 3vw, 2.25rem);
-  --text-3xl: clamp(2.25rem, 5vw, 3.25rem);
-  --leading-tight: 1.2;
-  --leading-snug: 1.35;
-  --leading-body: 1.65;
+  --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-xs: 0.75rem; /* 12px — labels, captions */
+  --text-sm: 0.875rem; /* 14px — meta, nav, buttons */
+  --text-base: 1rem; /* 16px — body */
+  --text-lg: 1.125rem; /* 18px — lead paragraphs */
+  --text-xl: clamp(1.2rem, 1.5vw + 0.85rem, 1.35rem); /* card titles */
+  --text-2xl: clamp(1.5rem, 2vw + 0.9rem, 1.85rem); /* section h2 */
+  --text-3xl: clamp(1.85rem, 3.2vw + 0.75rem, 2.65rem); /* page h1 */
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-body: 1.6;
   --tracking-tight: -0.02em;
-  --tracking-wide: 0.08em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+  --tracking-label: 0.1em;
+  --measure: 38rem;
+  --measure-wide: 42rem;
+
   /* Spacing scale (8px base) */
   --space-1: 0.5rem;
   --space-2: 0.75rem;
@@ -50,7 +56,7 @@
   --space-6: 3rem;
   --space-7: 4.5rem;
   --space-8: 6rem;
-  --section-y: clamp(3.5rem, 7vw, 5.5rem);
+  --section-y: clamp(3rem, 6vw, 4.75rem);
   --chat-w: min(380px, calc(100vw - 20px));
 }
 
@@ -62,6 +68,9 @@
 
 html {
   scroll-behavior: smooth;
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -69,10 +78,13 @@ body {
   font-family: var(--font-body);
   font-size: var(--text-base);
   font-weight: 400;
+  font-optical-sizing: auto;
   color: var(--ink);
   background: var(--bg);
   line-height: var(--leading-body);
+  letter-spacing: var(--tracking-normal);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
@@ -89,7 +101,7 @@ iframe {
 
 a {
   color: var(--sea-deep);
-  text-underline-offset: 0.2em;
+  text-underline-offset: 0.18em;
   text-decoration-thickness: 1px;
 }
 
@@ -97,43 +109,93 @@ a:hover {
   color: var(--sea);
 }
 
+/* ---- Headings (shared on every page) ---- */
 h1,
 h2,
 h3,
 h4 {
   font-family: var(--font-display);
   font-weight: 600;
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 30, "WONK" 0;
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tight);
-  margin: 0 0 0.5em;
+  margin: 0 0 0.45em;
   color: var(--ink);
   text-wrap: balance;
 }
 
 h1 {
   font-size: var(--text-3xl);
-  margin-bottom: 0.4em;
+  font-weight: 600;
+  margin-bottom: 0.35em;
 }
 
 h2 {
   font-size: var(--text-2xl);
-  margin-bottom: 0.45em;
+  font-weight: 600;
+  margin-bottom: 0.4em;
 }
 
 h3 {
   font-size: var(--text-xl);
   font-weight: 600;
   line-height: var(--leading-snug);
+  letter-spacing: -0.015em;
+}
+
+h4 {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: var(--leading-snug);
 }
 
 p {
-  margin: 0 0 1em;
+  margin: 0 0 0.9em;
   color: var(--ink-soft);
-  max-width: 40rem;
+  max-width: var(--measure-wide);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
 }
 
 p:last-child {
   margin-bottom: 0;
+}
+
+/* Shared text utilities */
+.lp-kicker,
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: var(--sea-deep);
+  margin: 0 0 0.75rem;
+}
+
+.lp-lead,
+.section-lead,
+.page-hero .section-lead {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-normal);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+  margin: 0 0 0;
+}
+
+.lp-head p,
+.section-head p {
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  color: var(--ink-soft);
+  max-width: var(--measure);
 }
 
 .container {
@@ -181,12 +243,12 @@ p:last-child {
   gap: 0.5rem;
   border: 1.5px solid transparent;
   border-radius: 10px;
-  padding: 0.8rem 1.35rem;
+  padding: 0.75rem 1.25rem;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--text-sm);
   letter-spacing: 0.01em;
-  line-height: 1.25;
+  line-height: 1.3;
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -351,7 +413,8 @@ p:last-child {
   font-size: 1.05rem;
   font-weight: 600;
   font-style: normal;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   color: var(--ink);
   white-space: nowrap;
 }
@@ -359,10 +422,11 @@ p:last-child {
 .logo-text small {
   color: var(--muted);
   font-family: var(--font-body);
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
@@ -375,11 +439,13 @@ p:last-child {
 .nav a {
   text-decoration: none;
   color: var(--ink-soft);
-  font-weight: 500;
+  font-family: var(--font-body);
   font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
   padding: 0.5rem 0.85rem;
   border-radius: 8px;
-  letter-spacing: 0.01em;
 }
 
 .nav a:hover,
@@ -775,29 +841,16 @@ p:last-child {
   margin-left: auto;
 }
 
-.lp-kicker {
-  font-family: var(--font-body);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--sea-deep);
-  margin: 0 0 var(--space-3);
-  line-height: 1.4;
+.lp-hero h1 {
+  font-size: var(--text-3xl);
+  margin-bottom: 0.45em;
 }
 
 .lp-hero h1 em {
   font-style: italic;
-  color: var(--sea);
   font-weight: 500;
-}
-
-.lp-lead {
-  font-size: var(--text-lg);
-  line-height: var(--leading-body);
-  max-width: 34rem;
-  color: var(--ink-soft);
-  margin-bottom: 0;
+  color: var(--sea-deep);
+  letter-spacing: -0.01em;
 }
 
 .lp-actions {
@@ -866,22 +919,25 @@ p:last-child {
 }
 
 .lp-head {
-  max-width: 36rem;
+  max-width: var(--measure-wide);
   margin-bottom: var(--space-5);
 }
 
+.lp-head h2 {
+  margin-bottom: 0.4em;
+}
+
 .lp-head p {
-  font-size: var(--text-base);
-  line-height: var(--leading-body);
   margin-bottom: 0;
 }
 
 .lp-note {
   margin-top: var(--space-5);
   font-size: var(--text-sm);
+  font-weight: 400;
   color: var(--muted);
   line-height: var(--leading-body);
-  max-width: 40rem;
+  max-width: var(--measure-wide);
 }
 
 .lp-split {
@@ -916,11 +972,14 @@ p:last-child {
 }
 
 .lp-list li::before {
-  content: "â€“";
+  content: "";
   position: absolute;
-  left: 0;
-  color: var(--sun);
-  font-weight: 700;
+  left: 0.1rem;
+  top: 0.75em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--sea-deep);
 }
 
 .lp-aside {
@@ -1094,45 +1153,52 @@ p:last-child {
 
 .room-card-top h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
   letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-snug);
 }
 
 .room-count {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
+  letter-spacing: 0.04em;
   color: var(--muted);
   background: var(--bg-2);
   padding: 0.2rem 0.45rem;
   border-radius: 6px;
+  line-height: 1.3;
 }
 
 .room-pax {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: var(--text-sm);
+  line-height: 1.4;
   color: var(--muted);
 }
 
 .room-price {
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: clamp(1.45rem, 2vw + 0.8rem, 1.75rem);
   font-weight: 600;
   color: var(--ink);
   margin: 0.35rem 0 0.65rem;
-  line-height: 1;
+  line-height: 1.1;
   letter-spacing: var(--tracking-tight);
 }
 
 .room-price span {
-  font-size: 1rem;
+  font-size: 0.85em;
 }
 
 .room-price small {
   font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   color: var(--muted);
   margin-left: 0.25rem;
+  letter-spacing: 0.02em;
 }
 
 .room-facts {
@@ -1145,8 +1211,10 @@ p:last-child {
 }
 
 .room-facts li {
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
   color: var(--sea-deep);
   background: var(--sea-soft);
   padding: 0.28rem 0.5rem;
@@ -2213,10 +2281,6 @@ button.admin-photo-pick.is-in-list {
     align-items: stretch;
   }
 
-  .admin-hint {
-    font-size: 0.84rem;
-  }
-
   .admin-nav-item {
     min-height: 46px;
     padding: 0.78rem 0.8rem;
@@ -2473,11 +2537,6 @@ button.admin-photo-pick.is-in-list {
   .admin-tab {
     padding: 0.5rem 0.85rem;
     font-size: 0.88rem;
-  }
-
-  .admin-panel .section-lead {
-    font-size: 0.92rem;
-    line-height: 1.5;
   }
 
   .admin-cal-nav .btn {
@@ -2811,13 +2870,18 @@ textarea:focus {
 .footer-name {
   font-family: var(--font-display);
   font-size: var(--text-xl);
+  font-weight: 600;
   color: #f3f8f9;
   letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
 }
 
 .footer-tag {
-  margin: 0.4rem 0 0;
+  margin: 0.35rem 0 0;
+  font-family: var(--font-body);
   font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.4;
   color: rgba(243, 248, 249, 0.55);
 }
 
@@ -2847,7 +2911,7 @@ textarea:focus {
   letter-spacing: 0.02em;
 }
 
-/* Scroll reveal â€” subtle, not theatrical */
+/* Scroll reveal — subtle */
 .reveal {
   opacity: 0;
   transform: translateY(8px);
@@ -2873,18 +2937,18 @@ textarea:focus {
 }
 
 .page-hero-inner {
-  max-width: 40rem;
+  max-width: var(--measure-wide);
 }
 
-.page-hero .section-lead {
-  font-size: var(--text-lg);
-  line-height: var(--leading-body);
-  color: var(--ink-soft);
-  max-width: 36rem;
+.page-hero h1 {
+  font-size: var(--text-3xl);
+  max-width: 18ch;
 }
 
 .page-hero code {
-  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  font-weight: 500;
   background: var(--sea-soft);
   padding: 0.1em 0.4em;
   border-radius: 6px;
@@ -2910,8 +2974,11 @@ textarea:focus {
 .faq-item summary {
   list-style: none;
   cursor: pointer;
+  font-family: var(--font-body);
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+  letter-spacing: 0;
   padding: 1rem 1.15rem;
   color: var(--ink);
   position: relative;
@@ -2934,7 +3001,7 @@ textarea:focus {
 }
 
 .faq-item[open] summary::after {
-  content: "âˆ’";
+  content: "\2212";
 }
 
 .faq-item summary:hover {
@@ -2981,28 +3048,17 @@ textarea:focus {
   }
 }
 
-.page-hero .section-lead,
-.section-lead {
-  max-width: 36rem;
-  color: var(--ink-soft);
-}
-
 .section {
-  padding: 3rem 0;
+  padding: var(--section-y) 0;
 }
 
 .section-head {
-  max-width: 36rem;
-  margin-bottom: 1.75rem;
+  max-width: var(--measure-wide);
+  margin-bottom: var(--space-5);
 }
 
-.eyebrow {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--sun);
-  margin: 0 0 0.65rem;
+.section-head h2 {
+  margin-bottom: 0.4em;
 }
 
 .about-grid,
@@ -3025,11 +3081,14 @@ textarea:focus {
 }
 
 .checklist li::before {
-  content: "âœ“";
+  content: "";
   position: absolute;
-  left: 0;
-  color: var(--sea);
-  font-weight: 700;
+  left: 0.15rem;
+  top: 0.7em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--sea-deep);
 }
 
 .info-card {
@@ -3057,7 +3116,10 @@ textarea:focus {
 
 .big-num {
   font-family: var(--font-display);
-  font-size: 2.2rem;
+  font-size: clamp(1.75rem, 2vw + 1rem, 2.15rem);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
   color: var(--sea-deep);
 }
 
@@ -3079,7 +3141,19 @@ textarea:focus {
 }
 
 .amenity-card h3 {
-  margin-top: 0;
+  margin: 0 0 0.4em;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-snug);
+}
+
+.amenity-card p {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  max-width: none;
 }
 
 .review-grid {
@@ -3100,27 +3174,40 @@ textarea:focus {
 
 .review-card p {
   flex: 1;
-  font-size: 0.95rem;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  max-width: none;
 }
 
 .review-stars {
   color: #c4921a;
   margin-bottom: 0.5rem;
+  font-size: var(--text-sm);
   letter-spacing: 0.08em;
+  line-height: 1;
 }
 
 .review-card footer {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
   margin-top: 0.9rem;
   padding-top: 0.85rem;
   border-top: 1px solid var(--line);
-  font-size: 0.85rem;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.review-card footer strong {
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .review-card footer span {
   color: var(--muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
 }
 
 .review-card.highlight {
@@ -4089,13 +4176,20 @@ body.modal-open {
 
 .admin-topbar-title h1 {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
   color: var(--ink);
 }
 
 .admin-topbar-title p {
-  margin: 0.15rem 0 0;
-  font-size: 0.82rem;
+  margin: 0.2rem 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.4;
   color: var(--muted);
   max-width: none;
 }
@@ -4157,10 +4251,12 @@ body.modal-open {
 
 .admin-hint {
   margin: 0;
-  font-size: 0.9rem;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 400;
   color: var(--ink-soft);
   max-width: none;
-  line-height: 1.5;
+  line-height: var(--leading-body);
 }
 
 .admin-footer-actions {
@@ -4854,10 +4950,6 @@ label {
     letter-spacing: 0.1em;
   }
 
-  .lp-kicker {
-    font-size: 0.75rem;
-  }
-
   .map-frame {
     min-height: 220px;
   }
@@ -4926,14 +5018,20 @@ label {
 }
 
 .error-page-inner {
-  max-width: 36rem;
+  max-width: var(--measure);
   text-align: center;
+}
+
+.error-page h1 {
+  font-size: var(--text-2xl);
 }
 
 .error-page-code {
   margin: 0.15rem 0 0.35rem;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(4rem, 16vw, 6.5rem);
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 14vw, 5.5rem);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.04em;
