@@ -60,10 +60,22 @@ service cloud.firestore {
 
 ## 2. Deploy
 
-Push to `main` or run **Actions → Deploy GitHub Pages**.  
-Build **fails** if Firebase secrets are missing (prevents shipping a broken cloud site).
+Push to `main` or run **Actions → Deploy GitHub Pages**.
 
-Public deploy **excludes**: `FIREBASE.md`, `PRODUCTION.md`, `README.md`, `docs/`, example config.
+### Update the deploy workflow (recommended)
+
+If your computer cannot push `.github/workflows/*` (GitHub needs the `workflow` OAuth scope):
+
+1. Open the repo on GitHub → `.github/workflows/deploy-pages.yml` → Edit  
+2. Replace contents with **`docs/deploy-pages.yml.example`**  
+3. Commit on `main`
+
+The hardened workflow:
+
+- Injects Firebase **only** from Actions secrets  
+- **Fails** the build if required secrets are missing  
+- Blanks any `adminPassword` before publishing  
+- Does **not** publish internal docs (`FIREBASE.md`, `PRODUCTION.md`, `docs/`)
 
 ## 3. SEO / Google ranking
 

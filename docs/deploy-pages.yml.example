@@ -1,10 +1,117 @@
-# Example only — the live workflow lives at:
-#   .github/workflows/deploy-pages.yml
+# Paste this into: .github/workflows/deploy-pages.yml on GitHub
+# (GitHub UI edit works if your local token lacks the `workflow` scope)
 #
-# Production deploy:
-# - Injects Firebase from GitHub Actions secrets (never commit keys)
-# - Fails if required secrets are missing
-# - Strips local adminPassword from public config
-# - Excludes internal docs (FIREBASE.md, PRODUCTION.md, docs/)
-#
-# See PRODUCTION.md for the full go-live checklist.
+# Production deploy → GitHub Pages
+# Secrets (repo Settings → Secrets and variables → Actions):
+#   FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_PROJECT_ID,
+#   FIREBASE_STORAGE_BUCKET, FIREBASE_MESSAGING_SENDER_ID, FIREBASE_APP_ID,
+#   FIREBASE_MEASUREMENT_ID (optional)
+name: Deploy GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write Firebase config from GitHub secrets only
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+        run: |
+          python3 << 'PY'
+          import json, os, sys
+          cfg = {
+            "apiKey": (os.environ.get("FIREBASE_API_KEY") or "").strip(),
+            "authDomain": (os.environ.get("FIREBASE_AUTH_DOMAIN") or "").strip(),
+            "projectId": (os.environ.get("FIREBASE_PROJECT_ID") or "").strip(),
+            "storageBucket": (os.environ.get("FIREBASE_STORAGE_BUCKET") or "").strip(),
+            "messagingSenderId": (os.environ.get("FIREBASE_MESSAGING_SENDER_ID") or "").strip(),
+            "appId": (os.environ.get("FIREBASE_APP_ID") or "").strip(),
+            "measurementId": (os.environ.get("FIREBASE_MEASUREMENT_ID") or "").strip(),
+          }
+          if not cfg["measurementId"]:
+            del cfg["measurementId"]
+          missing = [k for k in ("apiKey", "authDomain", "projectId", "appId") if not cfg.get(k)]
+          if missing:
+            print("ERROR: Missing required GitHub secrets:", ", ".join(missing))
+            print("Add them under Settings → Secrets and variables → Actions")
+            sys.exit(1)
+          open("js/firebase-config.js", "w", encoding="utf-8").write(
+              "/** Auto-generated at deploy — do not edit or commit secrets */\n"
+              "window.ALMA_FIREBASE = " + json.dumps(cfg, indent=2) + ";\n"
+          )
+          print("Firebase web config written (apiKey present:", bool(cfg.get("apiKey")), ")")
+          PY
+
+      - name: Production harden (strip secrets / internal files)
+        run: |
+          python3 << 'PY'
+          import re, pathlib
+          cfg_path = pathlib.Path("js/config.js")
+          text = cfg_path.read_text(encoding="utf-8")
+          text = re.sub(
+              r'adminPassword:\s*["\'][^"\']*["\']',
+              'adminPassword: ""',
+              text,
+              count=1,
+          )
+          text = re.sub(
+              r"firebase:\s*\{[^}]*\}",
+              "firebase: {}",
+              text,
+              count=1,
+          )
+          cfg_path.write_text(text, encoding="utf-8")
+          print("Stripped adminPassword and firebase block from config.js")
+          PY
+
+      - name: Stage public site only
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '_site' \
+            --exclude 'node_modules' \
+            --exclude 'docs' \
+            --exclude 'FIREBASE.md' \
+            --exclude 'PRODUCTION.md' \
+            --exclude 'README.md' \
+            --exclude 'js/firebase-config.example.js' \
+            --exclude '.gitignore' \
+            --exclude '*.md' \
+            ./ _site/
+          rm -f _site/js/firebase-config.example.js
+          test ! -f _site/FIREBASE.md
+          test ! -d _site/docs
+          echo "Public site staged"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
