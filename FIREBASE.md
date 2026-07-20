@@ -79,6 +79,7 @@ Collection `almaHaven` documents:
 - `stays` — guest occupancy  
 - `prices` — room price overrides  
 - `photos` — room photo overrides  
+- `gallery` — public site gallery (home + gallery.html)  
 - `notes` — admin notes (if used)  
 - `adminMeta` — first-login password flag  
 - `livePresence` — live agent online / offline  

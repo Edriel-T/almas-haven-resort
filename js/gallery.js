@@ -15,6 +15,11 @@
   }
 
   function getItems() {
+    // Prefer Admin-managed gallery (local + cloud) when available
+    if (window.AlmaSiteGallery && typeof window.AlmaSiteGallery.getItems === "function") {
+      const list = window.AlmaSiteGallery.getItems();
+      if (Array.isArray(list) && list.length) return list;
+    }
     const cfg = window.ALMA_CONFIG || {};
     if (Array.isArray(cfg.gallery) && cfg.gallery.length) return cfg.gallery;
     return [];
@@ -151,8 +156,13 @@
     if (window.AlmaReveal) window.AlmaReveal.refresh();
   }
 
-  function init() {
+  function refreshGrids() {
     document.querySelectorAll("[data-gallery-grid]").forEach(renderGrid);
+  }
+
+  function init() {
+    refreshGrids();
+    window.addEventListener("alma:site-gallery-updated", refreshGrids);
 
     const hero = document.querySelector("[data-hero-image]");
     if (hero && window.ALMA_CONFIG?.heroImages?.[0]) {
@@ -164,9 +174,12 @@
     if (story && window.ALMA_CONFIG?.heroImages?.[1]) {
       const h = window.ALMA_CONFIG.heroImages[1];
       story.innerHTML = `<img src="${imgSrc(h.src)}" alt="${h.alt || "Resort"}" loading="lazy" width="800" height="600" />`;
-    } else if (story && window.ALMA_CONFIG?.gallery?.[2]) {
-      const h = window.ALMA_CONFIG.gallery[2];
-      story.innerHTML = `<img src="${imgSrc(h.src)}" alt="${h.alt || "Resort"}" loading="lazy" width="800" height="600" />`;
+    } else if (story) {
+      const g = getItems();
+      if (g[2]) {
+        const h = g[2];
+        story.innerHTML = `<img src="${imgSrc(h.src)}" alt="${h.alt || "Resort"}" loading="lazy" width="800" height="600" />`;
+      }
     }
   }
 

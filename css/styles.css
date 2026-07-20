@@ -1623,6 +1623,41 @@ p:last-child {
   margin: 0.75rem 0 1.25rem;
 }
 
+.admin-gallery-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.admin-gallery-card figcaption {
+  padding: 0.35rem 0.4rem 0.25rem;
+}
+
+.admin-gallery-label {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.3rem 0.35rem;
+  background: #fff;
+  color: var(--ink);
+  min-height: 32px;
+}
+
+.admin-gallery-move {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 0.4rem 0.45rem;
+}
+
+.admin-gallery-move .btn {
+  flex: 1;
+  min-height: 32px;
+  padding: 0.15rem;
+  font-size: 0.85rem;
+}
+
 .admin-photo-card {
   position: relative;
   margin: 0;

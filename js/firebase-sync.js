@@ -11,6 +11,7 @@
     stays: "stays",
     prices: "prices",
     photos: "photos",
+    gallery: "gallery",
     notes: "notes",
     adminMeta: "adminMeta",
   };
@@ -176,6 +177,23 @@
     );
 
     unsubscribers.push(
+      listen(DOC_KEYS.gallery, (data) => {
+        if (!data || typeof data !== "object") return;
+        applyingRemote.gallery = true;
+        try {
+          if (window.AlmaSiteGallery && window.AlmaSiteGallery.applyRemote) {
+            window.AlmaSiteGallery.applyRemote(data);
+          } else {
+            localStorage.setItem("almas_haven_site_gallery_v1", JSON.stringify(data));
+            notifyLocal("almas-haven-gallery", "alma:site-gallery-updated");
+          }
+        } finally {
+          applyingRemote.gallery = false;
+        }
+      })
+    );
+
+    unsubscribers.push(
       listen(DOC_KEYS.notes, (data) => {
         if (!data || typeof data !== "object") return;
         applyingRemote.notes = true;
@@ -239,6 +257,20 @@
           notifyLocal("almas-haven-photos", "alma:room-photos-updated");
         } finally {
           applyingRemote.photos = false;
+        }
+      });
+      pullDoc(DOC_KEYS.gallery, (data) => {
+        if (!data || typeof data !== "object") return;
+        applyingRemote.gallery = true;
+        try {
+          if (window.AlmaSiteGallery && window.AlmaSiteGallery.applyRemote) {
+            window.AlmaSiteGallery.applyRemote(data);
+          } else {
+            localStorage.setItem("almas_haven_site_gallery_v1", JSON.stringify(data));
+            notifyLocal("almas-haven-gallery", "alma:site-gallery-updated");
+          }
+        } finally {
+          applyingRemote.gallery = false;
         }
       });
     }
@@ -431,6 +463,9 @@
   function pushPhotos(data) {
     return push(DOC_KEYS.photos, data);
   }
+  function pushGallery(data) {
+    return push(DOC_KEYS.gallery, data);
+  }
   function pushNotes(data) {
     return push(DOC_KEYS.notes, data);
   }
@@ -459,6 +494,12 @@
       /* ignore */
     }
     try {
+      const gallery = localStorage.getItem("almas_haven_site_gallery_v1");
+      if (gallery) results.gallery = await pushGallery(JSON.parse(gallery));
+    } catch {
+      /* ignore */
+    }
+    try {
       const notes = localStorage.getItem("almas_haven_admin_notes_v1");
       if (notes) results.notes = await pushNotes(JSON.parse(notes));
     } catch {
@@ -483,6 +524,7 @@
     pushStays,
     pushPrices,
     pushPhotos,
+    pushGallery,
     pushNotes,
     uploadLocalToCloud,
     isApplyingRemote(key) {

@@ -307,6 +307,7 @@
     initAvailability();
     initPrices();
     initPhotos();
+    initSiteGallery();
     initInbox();
     updateCloudBadge();
   }
@@ -1260,6 +1261,231 @@
           </button>`;
       }).join("");
     }
+  }
+
+  /* ---- Site gallery (public home + gallery.html) ---- */
+  let galleryDraft = [];
+
+  function initSiteGallery() {
+    const Gallery = window.AlmaSiteGallery;
+    if (!Gallery) return;
+
+    function loadDraft() {
+      const state = Gallery.load();
+      galleryDraft = state.items.map((it) => ({
+        id: it.id || Gallery.uid(),
+        src: it.src,
+        alt: it.alt || it.label || "Resort photo",
+        label: it.label || it.alt || "Photo",
+      }));
+      const hint = document.getElementById("galleryStatusHint");
+      if (hint) {
+        hint.textContent = state.isCustom
+          ? "Showing custom gallery saved in Admin (synced when cloud is connected)."
+          : "Showing default website gallery. Upload or remove photos, then Save gallery.";
+      }
+      renderGalleryAdmin();
+    }
+
+    function renderGalleryAdmin() {
+      const list = document.getElementById("galleryAdminList");
+      const count = document.getElementById("galleryCount");
+      if (count) count.textContent = `(${galleryDraft.length})`;
+      if (!list) return;
+
+      if (!galleryDraft.length) {
+        list.innerHTML =
+          '<p class="lp-note">No photos yet. Upload images or pick from the library below.</p>';
+      } else {
+        list.innerHTML = galleryDraft
+          .map((item, i) => {
+            const label = item.label || friendlyPhotoLabel(item.src, i);
+            return `
+            <figure class="admin-photo-card is-selected admin-gallery-card">
+              <img src="${imgSrcAdmin(item.src)}" alt="${escapeHtmlAdmin(label)}" loading="lazy" onerror="this.closest('figure').classList.add('is-broken')" />
+              <button type="button" class="admin-photo-remove" data-gallery-remove="${i}" title="Remove" aria-label="Remove photo">×</button>
+              <figcaption>
+                <input type="text" class="admin-gallery-label" data-gallery-label="${i}" value="${escapeHtmlAdmin(label)}" maxlength="48" aria-label="Photo label" />
+              </figcaption>
+              <div class="admin-gallery-move">
+                <button type="button" class="btn btn-ghost btn-sm" data-gallery-up="${i}" ${i === 0 ? "disabled" : ""} title="Move up">↑</button>
+                <button type="button" class="btn btn-ghost btn-sm" data-gallery-down="${i}" ${i === galleryDraft.length - 1 ? "disabled" : ""} title="Move down">↓</button>
+              </div>
+            </figure>`;
+          })
+          .join("");
+      }
+
+      const library = document.getElementById("galleryLibrary");
+      if (library) {
+        const used = new Set(galleryDraft.map((g) => g.src));
+        library.innerHTML = PHOTO_LIBRARY.map((src, i) => {
+          const label = friendlyPhotoLabel(src, i);
+          const active = used.has(src) ? "is-in-list" : "";
+          return `
+          <button type="button" class="admin-photo-card admin-photo-pick ${active}" data-gallery-add="${escapeHtmlAdmin(src)}" title="Add to gallery">
+            <img src="${imgSrcAdmin(src)}" alt="${escapeHtmlAdmin(label)}" loading="lazy" onerror="this.closest('button').classList.add('is-broken')" />
+            <figcaption>${escapeHtmlAdmin(label)}</figcaption>
+          </button>`;
+        }).join("");
+      }
+    }
+
+    function syncLabelsFromDom() {
+      document.querySelectorAll("[data-gallery-label]").forEach((input) => {
+        const i = Number(input.getAttribute("data-gallery-label"));
+        if (!Number.isFinite(i) || !galleryDraft[i]) return;
+        const v = String(input.value || "").trim() || `Photo ${i + 1}`;
+        galleryDraft[i].label = v;
+        galleryDraft[i].alt = v;
+      });
+    }
+
+    document.getElementById("galleryAdminList")?.addEventListener("click", (e) => {
+      const rm = e.target.closest("[data-gallery-remove]");
+      if (rm) {
+        const i = Number(rm.getAttribute("data-gallery-remove"));
+        if (!Number.isFinite(i)) return;
+        syncLabelsFromDom();
+        galleryDraft.splice(i, 1);
+        renderGalleryAdmin();
+        return;
+      }
+      const up = e.target.closest("[data-gallery-up]");
+      if (up) {
+        const i = Number(up.getAttribute("data-gallery-up"));
+        if (!Number.isFinite(i) || i <= 0) return;
+        syncLabelsFromDom();
+        const tmp = galleryDraft[i - 1];
+        galleryDraft[i - 1] = galleryDraft[i];
+        galleryDraft[i] = tmp;
+        renderGalleryAdmin();
+        return;
+      }
+      const down = e.target.closest("[data-gallery-down]");
+      if (down) {
+        const i = Number(down.getAttribute("data-gallery-down"));
+        if (!Number.isFinite(i) || i >= galleryDraft.length - 1) return;
+        syncLabelsFromDom();
+        const tmp = galleryDraft[i + 1];
+        galleryDraft[i + 1] = galleryDraft[i];
+        galleryDraft[i] = tmp;
+        renderGalleryAdmin();
+      }
+    });
+
+    document.getElementById("galleryLibrary")?.addEventListener("click", (e) => {
+      const add = e.target.closest("[data-gallery-add]");
+      if (!add) return;
+      const src = add.getAttribute("data-gallery-add");
+      if (!src) return;
+      syncLabelsFromDom();
+      if (galleryDraft.some((g) => g.src === src)) {
+        toast("Already in gallery");
+        return;
+      }
+      const label = friendlyPhotoLabel(src, galleryDraft.length);
+      galleryDraft.push({
+        id: Gallery.uid(),
+        src,
+        alt: label,
+        label,
+      });
+      renderGalleryAdmin();
+    });
+
+    document.getElementById("galleryUpload")?.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      syncLabelsFromDom();
+      let added = 0;
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) continue;
+        try {
+          // Resize large uploads so cloud/localStorage stay usable
+          const dataUrl = await readImageAsDataURL(file, 1600, 0.82);
+          const base = (file.name || "Photo").replace(/\.[^.]+$/, "").slice(0, 40);
+          galleryDraft.push({
+            id: Gallery.uid(),
+            src: dataUrl,
+            alt: base || "Resort photo",
+            label: base || "Upload",
+          });
+          added++;
+        } catch {
+          toast("Could not read " + file.name);
+        }
+      }
+      renderGalleryAdmin();
+      e.target.value = "";
+      if (added) toast(`${added} image${added === 1 ? "" : "s"} added. Click Save gallery.`);
+    });
+
+    document.getElementById("gallerySave")?.addEventListener("click", () => {
+      syncLabelsFromDom();
+      if (!galleryDraft.length) {
+        if (!confirm("Save an empty gallery? Guests will see no photos until you add some.")) return;
+      }
+      Gallery.save(galleryDraft.slice());
+      loadDraft();
+      toast("Gallery saved. Guests will see updates on Home and Gallery.");
+    });
+
+    document.getElementById("galleryReset")?.addEventListener("click", () => {
+      if (!confirm("Reset gallery to the default website photos?")) return;
+      Gallery.clear();
+      loadDraft();
+      toast("Gallery reset to defaults.");
+    });
+
+    window.addEventListener("alma:site-gallery-updated", () => {
+      // Only refresh if panel not dirty with unsaved label edits mid-type — reload from store
+      loadDraft();
+    });
+
+    loadDraft();
+  }
+
+  /** Compress/resize images for gallery uploads (keeps storage size reasonable) */
+  function readImageAsDataURL(file, maxEdge, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const src = String(reader.result || "");
+        if (!src.startsWith("data:image/")) {
+          resolve(src);
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let w = img.naturalWidth || img.width;
+            let h = img.naturalHeight || img.height;
+            const max = maxEdge || 1600;
+            if (w > max || h > max) {
+              const scale = max / Math.max(w, h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            const q = typeof quality === "number" ? quality : 0.82;
+            // Prefer JPEG for photos (smaller); keep PNG if source was PNG with alpha
+            const outType = /png/i.test(file.type) ? "image/jpeg" : file.type || "image/jpeg";
+            resolve(canvas.toDataURL(outType === "image/png" ? "image/jpeg" : outType, q));
+          } catch {
+            resolve(src);
+          }
+        };
+        img.onerror = () => resolve(src);
+        img.src = src;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   /* ---- Inbox ---- */

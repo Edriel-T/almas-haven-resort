@@ -115,7 +115,11 @@
         </button>
         <button type="button" class="admin-nav-item" data-tab="photos" role="tab" aria-selected="false">
           <span class="admin-nav-ico" aria-hidden="true">🖼</span>
-          <span class="admin-nav-label">Photos</span>
+          <span class="admin-nav-label">Room photos</span>
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="gallery" role="tab" aria-selected="false">
+          <span class="admin-nav-ico" aria-hidden="true">🏞</span>
+          <span class="admin-nav-label">Gallery</span>
         </button>
         <button type="button" class="admin-nav-item" data-tab="inbox" role="tab" aria-selected="false">
           <span class="admin-nav-ico" aria-hidden="true">📥</span>
@@ -257,8 +261,8 @@
           </div>
         </section>
 
-        <!-- Photos -->
-        <section id="panel-photos" class="admin-panel" hidden data-title="Photos" data-lead="Room gallery images for guests">
+        <!-- Room photos -->
+        <section id="panel-photos" class="admin-panel" hidden data-title="Room photos" data-lead="Room gallery images for guests">
           <div class="admin-panel-toolbar admin-panel-toolbar--row">
             <label class="admin-field admin-field-room">
               Room
@@ -284,6 +288,37 @@
             </label>
             <button type="button" class="btn btn-primary" id="photoSave">Save photos</button>
             <button type="button" class="btn btn-ghost" id="photoReset">Reset</button>
+          </div>
+        </section>
+
+        <!-- Site gallery (home + gallery.html) -->
+        <section id="panel-gallery" class="admin-panel" hidden data-title="Gallery" data-lead="Resort photos on the website gallery">
+          <div class="admin-panel-toolbar">
+            <p class="admin-hint">
+              These photos appear on the <strong>home page</strong> and <strong>Gallery</strong> page.
+              Upload new images or remove ones you don’t want. Click <strong>Save gallery</strong> to publish.
+              Cloud syncs when you are signed in.
+            </p>
+            <p class="lp-note" id="galleryStatusHint" style="margin-top:0.5rem"></p>
+          </div>
+
+          <div class="admin-photo-section">
+            <h3 class="admin-subhead">Gallery photos <span id="galleryCount" class="admin-muted"></span></h3>
+            <div class="admin-photo-selected admin-gallery-grid" id="galleryAdminList"></div>
+          </div>
+
+          <div class="admin-photo-section">
+            <h3 class="admin-subhead">Add from library</h3>
+            <div class="admin-photo-library" id="galleryLibrary"></div>
+          </div>
+
+          <div class="admin-footer-actions">
+            <label class="btn btn-ghost" style="cursor:pointer">
+              Upload images
+              <input type="file" id="galleryUpload" accept="image/*" multiple hidden />
+            </label>
+            <button type="button" class="btn btn-primary" id="gallerySave">Save gallery</button>
+            <button type="button" class="btn btn-ghost" id="galleryReset">Reset to defaults</button>
           </div>
         </section>
 
@@ -317,6 +352,7 @@
   <script src="js/firebase-sync.js"></script>
   <script src="js/room-prices.js"></script>
   <script src="js/room-photos.js"></script>
+  <script src="js/site-gallery.js"></script>
   <script src="js/live-agent.js"></script>
   <script src="js/availability.js"></script>
   <script src="js/notifications.js"></script>
