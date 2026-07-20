@@ -1,5 +1,7 @@
 # Alma's Haven Resort — Website
 
+**Live site:** https://edriel-t.github.io/almas-haven-resort/
+
 Multi-page marketing site for **Alma's Haven Resort** (Dasol, Pangasinan) with:
 
 - Pages: Home, About, Rooms, Reviews, Location, Staff Admin
@@ -36,6 +38,23 @@ To change the couple room photo: replace `Images/Couple room.jpg` or update the 
 - Default password: set `adminPassword` in `js/config.js` (default `almasadmin`)
 - **Availability:** pick room → set day to “Not available” → click calendar dates (red for guests)
 - **Room photos:** paths under `Images/`, one per line — shown when guests click a room card
+
+## SEO (make the site findable)
+
+| File | Purpose |
+|------|---------|
+| `robots.txt` | Allows Google to index public pages; blocks admin |
+| `sitemap.xml` | List of pages for search engines |
+| Meta / Open Graph | Better titles, descriptions, Facebook/Twitter share previews |
+| JSON-LD | Resort business data (home) + FAQ schema (faq page) |
+
+### Submit to Google (recommended)
+1. Go to [Google Search Console](https://search.google.com/search-console)
+2. Add property: `https://edriel-t.github.io/almas-haven-resort/`
+3. Submit sitemap: `https://edriel-t.github.io/almas-haven-resort/sitemap.xml`
+4. Request indexing for the homepage
+
+Also keep your **Google Business Profile** for the resort updated and linked — that helps local search (“resort Dasol”) more than the website alone.
 
 ## Other JS
 
