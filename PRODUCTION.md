@@ -86,6 +86,20 @@ The hardened workflow:
 5. Keep **Google Business Profile** for Alma's Haven Resort (Dasol) updated — local pack ranking depends on this more than the website alone
 6. Share pages on Facebook (OG tags already set)
 
+### Google Analytics / “Your Google tag wasn't detected”
+
+That message means Google did not find `gtag.js` with **your** Measurement ID on the live site.
+
+1. Analytics → Admin → **Data streams** → Web → copy **Measurement ID** (`G-XXXXXXXX`)
+2. Open `js/google-tag.js` and set:
+   ```js
+   var MEASUREMENT_ID = "G-XXXXXXXX";
+   ```
+3. Deploy, hard-refresh `https://almashaven.edrielcabansi.com/`
+4. In Google, run **Test your website** again (wait 1–5 minutes; disable ad blockers)
+
+**Search Console** verification is separate from Analytics. Ranking uses Search Console + content + Google Business Profile; Analytics only measures visits.
+
 ### What the site already does for SEO
 
 - Unique titles & meta descriptions per page  

@@ -88,6 +88,15 @@ window.ALMA_CONFIG = {
   formspreeEndpoint: "",
   webhookUrl: "",
 
+  /**
+   * Google tag / Analytics (public page source — not a secret).
+   * Paste your GA4 Measurement ID (G-XXXXXXXX) or Google tag (GT-XXXXXXXX).
+   * Loaded by js/google-tag.js on public pages only. Leave empty to disable.
+   */
+  googleAnalyticsId: "",
+  /** Optional Search Console HTML-tag verification content value only */
+  googleSiteVerification: "",
+
   storageKey: "almas_haven_inbox_v1",
   chatHistoryKey: "almas_haven_chat_v1",
 };
