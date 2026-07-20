@@ -95,7 +95,7 @@ window.ALMA_CONFIG = {
    */
   googleAnalyticsId: "G-X11CX1VS59",
   /** Optional Search Console HTML-tag verification content value only */
-  googleSiteVerification: "",
+  googleSiteVerification: "WKiFrASyXRFyHs9NkECz57GA6jw63UvPFu2qO-Jx7Ew",
 
   storageKey: "almas_haven_inbox_v1",
   chatHistoryKey: "almas_haven_chat_v1",
