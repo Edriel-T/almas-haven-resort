@@ -1242,7 +1242,7 @@
         items.filter((i) => i.type === "reservation").length
       );
       const tabUnread = document.getElementById("tabUnread");
-      if (tabUnread) tabUnread.textContent = unread ? `(${unread})` : "";
+      if (tabUnread) tabUnread.textContent = unread ? String(unread) : "";
 
       if (!items.length) {
         list.innerHTML =
@@ -1338,7 +1338,7 @@
           // soft refresh unread badge without collapsing
           const unread = window.AlmaNotify.loadInbox().filter((i) => !i.read).length;
           const tabUnread = document.getElementById("tabUnread");
-          if (tabUnread) tabUnread.textContent = unread ? `(${unread})` : "";
+          if (tabUnread) tabUnread.textContent = unread ? String(unread) : "";
           document.getElementById("statUnread").textContent = String(unread);
           const article = list.querySelector(`[data-inbox-id="${id}"]`);
           if (article) article.classList.remove("unread");
