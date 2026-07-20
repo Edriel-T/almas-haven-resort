@@ -1272,7 +1272,12 @@
 
     function loadDraft() {
       const state = Gallery.load();
-      galleryDraft = state.items.map((it) => ({
+      // Always show something editable — defaults if no custom photos
+      const source =
+        state.items && state.items.length
+          ? state.items
+          : Gallery.defaultsFromConfig();
+      galleryDraft = source.map((it) => ({
         id: it.id || Gallery.uid(),
         src: it.src,
         alt: it.alt || it.label || "Resort photo",
@@ -1280,9 +1285,13 @@
       }));
       const hint = document.getElementById("galleryStatusHint");
       if (hint) {
-        hint.textContent = state.isCustom
-          ? "Showing custom gallery saved in Admin (synced when cloud is connected)."
-          : "Showing default website gallery. Upload or remove photos, then Save gallery.";
+        if (state.isCustom && state.items.length) {
+          hint.textContent =
+            "Custom gallery is active (saved in Admin). Changes sync when cloud is connected.";
+        } else {
+          hint.textContent =
+            "Default website gallery. Upload, remove, or reorder, then click Save gallery.";
+        }
       }
       renderGalleryAdmin();
     }
@@ -1424,7 +1433,17 @@
     document.getElementById("gallerySave")?.addEventListener("click", () => {
       syncLabelsFromDom();
       if (!galleryDraft.length) {
-        if (!confirm("Save an empty gallery? Guests will see no photos until you add some.")) return;
+        if (
+          !confirm(
+            "No photos in the list. Reset to the default website gallery instead?"
+          )
+        ) {
+          return;
+        }
+        Gallery.clear();
+        loadDraft();
+        toast("Gallery reset to default photos.");
+        return;
       }
       Gallery.save(galleryDraft.slice());
       loadDraft();
@@ -1439,7 +1458,6 @@
     });
 
     window.addEventListener("alma:site-gallery-updated", () => {
-      // Only refresh if panel not dirty with unsaved label edits mid-type — reload from store
       loadDraft();
     });
 

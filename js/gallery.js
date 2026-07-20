@@ -15,10 +15,14 @@
   }
 
   function getItems() {
-    // Prefer Admin-managed gallery (local + cloud) when available
+    // Prefer Admin-managed gallery (local + cloud) when it has photos
     if (window.AlmaSiteGallery && typeof window.AlmaSiteGallery.getItems === "function") {
-      const list = window.AlmaSiteGallery.getItems();
-      if (Array.isArray(list) && list.length) return list;
+      try {
+        const list = window.AlmaSiteGallery.getItems();
+        if (Array.isArray(list) && list.length) return list;
+      } catch (e) {
+        console.warn("[Gallery] AlmaSiteGallery failed, using defaults", e);
+      }
     }
     const cfg = window.ALMA_CONFIG || {};
     if (Array.isArray(cfg.gallery) && cfg.gallery.length) return cfg.gallery;
