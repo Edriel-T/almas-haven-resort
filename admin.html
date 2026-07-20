@@ -42,6 +42,7 @@
           <p>Availability · prices · photos · live chat</p>
         </div>
         <div class="admin-actions">
+          <span class="admin-cloud-badge" id="adminCloudBadge" title="Cloud sync status">Cloud: …</span>
           <label class="admin-online-toggle admin-btn-light">
             <input type="checkbox" id="agentOnlineToggle" />
             <span id="agentOnlineLabel">Go online as agent</span>
@@ -244,6 +245,10 @@
 
   <script src="js/config.js"></script>
   <script src="js/rooms-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="js/firebase-sync.js"></script>
   <script src="js/room-prices.js"></script>
   <script src="js/room-photos.js"></script>
   <script src="js/admin-notes.js"></script>

@@ -3274,6 +3274,31 @@ body.modal-open {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+  align-items: center;
+}
+
+.admin-cloud-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.admin-cloud-badge.is-ok {
+  background: rgba(34, 180, 100, 0.35);
+}
+
+.admin-cloud-badge.is-warn {
+  background: rgba(230, 160, 30, 0.4);
+}
+
+.admin-cloud-badge.is-off {
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 0.9;
 }
 
 .admin-btn-light {

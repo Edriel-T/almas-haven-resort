@@ -59,8 +59,15 @@
     }
   });
 
-  document.getElementById("adminLogout")?.addEventListener("click", () => {
+  document.getElementById("adminLogout")?.addEventListener("click", async () => {
     if (window.AlmaLiveAgent) window.AlmaLiveAgent.goOffline();
+    if (window.AlmaCloud) {
+      try {
+        await window.AlmaCloud.signOutAdmin();
+      } catch {
+        /* ignore */
+      }
+    }
     setLoggedIn(false);
     showApp(false);
     document.getElementById("adminPasswordInput").value = "";
@@ -73,11 +80,63 @@
     if (appReady) return;
     appReady = true;
     initTabs();
+    initCloudBadge();
     initLiveAgentDesk();
     initAvailability();
     initPrices();
     initPhotos();
     initInbox();
+    connectFirebaseAdmin();
+  }
+
+  function updateCloudBadge(detail) {
+    const el = document.getElementById("adminCloudBadge");
+    if (!el) return;
+    const s = detail || (window.AlmaCloud && window.AlmaCloud.status()) || {};
+    el.classList.remove("is-ok", "is-warn", "is-off");
+    if (!s.configured) {
+      el.textContent = "Cloud: off (local only)";
+      el.classList.add("is-off");
+      el.title = "Add Firebase settings in js/config.js — see FIREBASE.md";
+    } else if (s.writeReady) {
+      el.textContent = "Cloud: synced";
+      el.classList.add("is-ok");
+      el.title = s.user ? `Signed in as ${s.user}` : "Cloud writes enabled";
+    } else if (s.ready) {
+      el.textContent = "Cloud: read only";
+      el.classList.add("is-warn");
+      el.title = "Connected for read. Sign-in for admin still pending…";
+    } else {
+      el.textContent = "Cloud: connecting…";
+      el.classList.add("is-warn");
+      el.title = "Connecting to Firebase…";
+    }
+  }
+
+  function initCloudBadge() {
+    updateCloudBadge();
+    window.addEventListener("alma:cloud-status", (e) => updateCloudBadge(e.detail));
+  }
+
+  async function connectFirebaseAdmin() {
+    if (!window.AlmaCloud || !window.AlmaCloud.isConfigured()) {
+      updateCloudBadge();
+      return;
+    }
+    try {
+      await window.AlmaCloud.signInAdmin();
+      toast("Cloud sync on — changes update all devices");
+      // First-time: push any local stays already on this browser
+      try {
+        await window.AlmaCloud.uploadLocalToCloud();
+      } catch {
+        /* ignore upload errors */
+      }
+    } catch (err) {
+      console.error(err);
+      toast(err.message || "Cloud sign-in failed — check FIREBASE.md");
+      updateCloudBadge();
+    }
   }
 
   /* ---- Live agent desk ---- */

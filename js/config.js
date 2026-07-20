@@ -31,6 +31,29 @@ window.ALMA_CONFIG = {
    */
   adminPassword: "almasadmin",
 
+  /**
+   * Firebase cloud sync (availability, prices, photos, notes across all devices).
+   * Setup guide: FIREBASE.md
+   *
+   * 1. Create a Firebase project → enable Firestore + Email/Password Auth
+   * 2. Create one Auth user (admin email/password)
+   * 3. Paste web app config below
+   * 4. Set Firestore rules from FIREBASE.md (public read, auth write)
+   *
+   * Leave apiKey empty to use this browser only (localStorage).
+   */
+  firebase: {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: "",
+    /** Firebase Authentication user (for admin writes only) */
+    adminEmail: "",
+    adminPassword: "",
+  },
+
   /** Homepage hero photos */
   heroImages: [
     { src: "Images/Homepage image.jpg", alt: "Alma's Haven Resort beachfront" },

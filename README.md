@@ -36,8 +36,17 @@ To change the couple room photo: replace `Images/Couple room.jpg` or update the 
 
 - URL: `admin.html` (not linked on the public site)
 - Default password: set `adminPassword` in `js/config.js` (default `almasadmin`)
-- **Availability:** pick room → set day to “Not available” → click calendar dates (red for guests)
-- **Room photos:** paths under `Images/`, one per line — shown when guests click a room card
+- **Availability:** click a date → assign guests per room unit (check-in / check-out)
+- **Prices / room photos / notes** managed in admin tabs
+
+### Cloud sync (Firebase) — all devices share the same calendar
+
+Without Firebase, availability only updates on the browser you used.
+
+1. Follow **[FIREBASE.md](FIREBASE.md)** (free Firebase project)
+2. Paste keys into `js/config.js` → `firebase: { … }`
+3. Admin badge should show **Cloud: synced**
+4. Homepage calendar then matches on phone, PC, and guest devices
 
 ## SEO (make the site findable)
 

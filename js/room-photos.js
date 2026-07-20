@@ -17,6 +17,9 @@
   function save(data) {
     localStorage.setItem(KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent("alma:room-photos-updated"));
+    if (window.AlmaCloud && !window.AlmaCloud.isApplyingRemote("photos")) {
+      window.AlmaCloud.pushPhotos(data);
+    }
   }
 
   function getOverrides(roomId) {

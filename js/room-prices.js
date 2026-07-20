@@ -18,6 +18,9 @@
     localStorage.setItem(KEY, JSON.stringify(data));
     applyToConfig();
     window.dispatchEvent(new CustomEvent("alma:room-prices-updated"));
+    if (window.AlmaCloud && !window.AlmaCloud.isApplyingRemote("prices")) {
+      window.AlmaCloud.pushPrices(data);
+    }
   }
 
   function getDefaultPrice(roomId) {

@@ -17,6 +17,9 @@
   function save(data) {
     localStorage.setItem(KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent("alma:admin-notes-updated"));
+    if (window.AlmaCloud && !window.AlmaCloud.isApplyingRemote("notes")) {
+      window.AlmaCloud.pushNotes(data);
+    }
   }
 
   function getNote(roomId, dateStr) {

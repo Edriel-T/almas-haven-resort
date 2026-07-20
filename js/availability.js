@@ -32,6 +32,10 @@
       /* ignore */
     }
     window.dispatchEvent(new CustomEvent("alma:availability-updated"));
+    // Sync to Firebase so all devices/guests see the same occupancy
+    if (window.AlmaCloud && !window.AlmaCloud.isApplyingRemote("stays")) {
+      window.AlmaCloud.pushStays(data);
+    }
   }
 
   function rooms() {
