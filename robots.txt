@@ -1,0 +1,9 @@
+# Alma's Haven Resort — search engine rules
+User-agent: *
+Allow: /
+
+# Keep staff admin out of search results
+Disallow: /admin.html
+
+# Sitemap (update domain if you change hosting)
+Sitemap: https://edriel-t.github.io/almas-haven-resort/sitemap.xml
