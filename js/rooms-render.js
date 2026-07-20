@@ -236,6 +236,21 @@
 
   window.addEventListener("alma:room-photos-updated", refreshRoomGrids);
   window.addEventListener("alma:room-prices-updated", refreshRoomGrids);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshRoomGrids();
+  });
+  try {
+    const bcP = new BroadcastChannel("almas-haven-prices");
+    bcP.onmessage = () => refreshRoomGrids();
+  } catch {
+    /* ignore */
+  }
+  try {
+    const bcPh = new BroadcastChannel("almas-haven-photos");
+    bcPh.onmessage = () => refreshRoomGrids();
+  } catch {
+    /* ignore */
+  }
 
   window.AlmaRooms = {
     cardHTML,

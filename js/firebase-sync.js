@@ -89,15 +89,27 @@
         }
         db = firebase.firestore();
         auth = firebase.auth();
+        // Keep admin signed in across page refresh
+        try {
+          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        } catch {
+          /* ignore */
+        }
         try {
           await db.enablePersistence({ synchronizeTabs: true });
         } catch {
           /* multi-tab / unsupported */
         }
+        // Restore write access if Auth session still valid
+        auth.onAuthStateChanged((user) => {
+          writeReady = !!user;
+          emitStatus();
+        });
         ready = true;
         startPublicListeners();
+        startLiveRefreshHooks();
         emitStatus();
-        console.info("[AlmaCloud] Connected to Firestore — data syncs across devices.");
+        console.info("[AlmaCloud] Connected to Firestore — live sync across devices.");
         return true;
       } catch (err) {
         console.error("[AlmaCloud] Init failed:", err);
@@ -109,6 +121,17 @@
     return initPromise;
   }
 
+  function notifyLocal(channelName, eventName) {
+    window.dispatchEvent(new CustomEvent(eventName));
+    try {
+      const bc = new BroadcastChannel(channelName);
+      bc.postMessage({ type: eventName });
+      bc.close();
+    } catch {
+      /* ignore */
+    }
+  }
+
   function startPublicListeners() {
     unsubscribers.push(
       listen(DOC_KEYS.stays, (data) => {
@@ -116,7 +139,7 @@
         applyingRemote.stays = true;
         try {
           localStorage.setItem("almas_haven_stays_v1", JSON.stringify(data));
-          window.dispatchEvent(new CustomEvent("alma:availability-updated"));
+          notifyLocal("almas-haven-availability", "alma:availability-updated");
         } finally {
           applyingRemote.stays = false;
         }
@@ -132,7 +155,7 @@
           if (window.AlmaRoomPrices && window.AlmaRoomPrices.applyToConfig) {
             window.AlmaRoomPrices.applyToConfig();
           }
-          window.dispatchEvent(new CustomEvent("alma:room-prices-updated"));
+          notifyLocal("almas-haven-prices", "alma:room-prices-updated");
         } finally {
           applyingRemote.prices = false;
         }
@@ -145,7 +168,7 @@
         applyingRemote.photos = true;
         try {
           localStorage.setItem("almas_haven_room_photos_v1", JSON.stringify(data));
-          window.dispatchEvent(new CustomEvent("alma:room-photos-updated"));
+          notifyLocal("almas-haven-photos", "alma:room-photos-updated");
         } finally {
           applyingRemote.photos = false;
         }
@@ -158,12 +181,111 @@
         applyingRemote.notes = true;
         try {
           localStorage.setItem("almas_haven_admin_notes_v1", JSON.stringify(data));
-          window.dispatchEvent(new CustomEvent("alma:admin-notes-updated"));
+          notifyLocal("almas-haven-notes", "alma:admin-notes-updated");
         } finally {
           applyingRemote.notes = false;
         }
       })
     );
+  }
+
+  /** Soft re-pull when tab becomes visible (covers rare listener gaps) */
+  function startLiveRefreshHooks() {
+    if (startLiveRefreshHooks._done) return;
+    startLiveRefreshHooks._done = true;
+
+    async function pullDoc(key, apply) {
+      if (!db || !ready) return;
+      try {
+        const snap = await db.collection(COLLECTION).doc(key).get();
+        if (!snap.exists) return;
+        const payload = snap.data();
+        const data = payload && payload.data !== undefined ? payload.data : payload;
+        apply(data);
+      } catch (err) {
+        console.warn("[AlmaCloud] Refresh pull failed:", key, err.message);
+      }
+    }
+
+    function refreshFromCloud() {
+      pullDoc(DOC_KEYS.stays, (data) => {
+        if (!data || !Array.isArray(data.stays)) return;
+        applyingRemote.stays = true;
+        try {
+          localStorage.setItem("almas_haven_stays_v1", JSON.stringify(data));
+          notifyLocal("almas-haven-availability", "alma:availability-updated");
+        } finally {
+          applyingRemote.stays = false;
+        }
+      });
+      pullDoc(DOC_KEYS.prices, (data) => {
+        if (!data || typeof data !== "object") return;
+        applyingRemote.prices = true;
+        try {
+          localStorage.setItem("almas_haven_room_prices_v1", JSON.stringify(data));
+          if (window.AlmaRoomPrices && window.AlmaRoomPrices.applyToConfig) {
+            window.AlmaRoomPrices.applyToConfig();
+          }
+          notifyLocal("almas-haven-prices", "alma:room-prices-updated");
+        } finally {
+          applyingRemote.prices = false;
+        }
+      });
+      pullDoc(DOC_KEYS.photos, (data) => {
+        if (!data || typeof data !== "object") return;
+        applyingRemote.photos = true;
+        try {
+          localStorage.setItem("almas_haven_room_photos_v1", JSON.stringify(data));
+          notifyLocal("almas-haven-photos", "alma:room-photos-updated");
+        } finally {
+          applyingRemote.photos = false;
+        }
+      });
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshFromCloud();
+    });
+    window.addEventListener("online", refreshFromCloud);
+    // Light safety net every 45s while page is open
+    setInterval(() => {
+      if (document.visibilityState === "visible") refreshFromCloud();
+    }, 45000);
+  }
+
+  /**
+   * Wait for Firebase Auth to restore persisted session (after refresh).
+   */
+  function waitForAuth(timeoutMs) {
+    const ms = typeof timeoutMs === "number" ? timeoutMs : 8000;
+    return new Promise((resolve) => {
+      if (!auth) {
+        resolve(null);
+        return;
+      }
+      if (auth.currentUser) {
+        writeReady = true;
+        emitStatus();
+        resolve(auth.currentUser);
+        return;
+      }
+      let done = false;
+      const finish = (user) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        unsub();
+        writeReady = !!user;
+        emitStatus();
+        resolve(user || null);
+      };
+      const unsub = auth.onAuthStateChanged((user) => finish(user));
+      const timer = setTimeout(() => finish(auth.currentUser || null), ms);
+    });
+  }
+
+  function getCurrentUser() {
+    return (auth && auth.currentUser) || null;
   }
 
   function listen(docId, onData) {
@@ -320,6 +442,8 @@
     status,
     signInAdmin,
     signOutAdmin,
+    waitForAuth,
+    getCurrentUser,
     mustChangePassword,
     changeAdminPassword,
     push,

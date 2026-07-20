@@ -201,9 +201,18 @@
 
     window.addEventListener("alma:availability-updated", render);
     window.addEventListener("alma:room-prices-updated", render);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") render();
+    });
     try {
       const bc = new BroadcastChannel(Av.channelName);
       bc.onmessage = () => render();
+    } catch {
+      /* ignore */
+    }
+    try {
+      const bc2 = new BroadcastChannel("almas-haven-prices");
+      bc2.onmessage = () => render();
     } catch {
       /* ignore */
     }

@@ -1209,14 +1209,38 @@
     renderInbox();
   }
 
-  // Wait for Firebase SDK + AlmaCloud init before choosing login mode
-  function bootAdmin() {
+  // Restore session after refresh (Firebase Auth persistence + local session)
+  async function bootAdmin() {
     setupLoginFormMode();
-    if (isLoggedIn() && cloudEnabled()) {
-      // Session flag alone is not enough for writes — require fresh cloud login
+
+    if (cloudEnabled() && window.AlmaCloud) {
+      try {
+        await window.AlmaCloud.init();
+        const user = await window.AlmaCloud.waitForAuth(8000);
+        if (user) {
+          setLoggedIn(true);
+          pendingLocalMode = false;
+          const mustChange = await window.AlmaCloud.mustChangePassword();
+          if (mustChange) {
+            showScreen("change");
+            toast("Please create a new password to continue");
+          } else {
+            showScreen("app");
+            initAdminApp();
+            updateCloudBadge();
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn("Admin session restore failed:", err);
+      }
       setLoggedIn(false);
       showScreen("login");
-    } else if (isLoggedIn() && !cloudEnabled()) {
+      return;
+    }
+
+    // Local-only mode (no Firebase)
+    if (isLoggedIn()) {
       if (localPasswordNeedsChange()) {
         pendingLocalMode = true;
         showScreen("change");
@@ -1230,7 +1254,9 @@
   }
 
   if (window.AlmaCloud) {
-    window.AlmaCloud.init().finally(bootAdmin);
+    window.AlmaCloud.init().finally(() => {
+      bootAdmin();
+    });
   } else {
     bootAdmin();
   }
