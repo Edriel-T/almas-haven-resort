@@ -40,6 +40,29 @@
     </div>
   </div>
 
+  <!-- First login / forced password change -->
+  <div id="adminChangePw" class="admin-login" hidden>
+    <div class="admin-login-card">
+      <p class="lp-kicker">Security</p>
+      <h1>Change password</h1>
+      <p class="section-lead" id="adminChangePwLead">
+        For security, set a new password on first sign-in. Use a strong unique password.
+      </p>
+      <form id="adminChangePwForm">
+        <label>
+          New password
+          <input type="password" id="adminNewPw" name="newPassword" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" />
+        </label>
+        <label>
+          Confirm new password
+          <input type="password" id="adminNewPw2" name="confirmPassword" required minlength="8" autocomplete="new-password" placeholder="Repeat password" />
+        </label>
+        <p class="form-note error" id="adminChangePwError" hidden></p>
+        <button type="submit" class="btn btn-primary btn-block" id="adminChangePwSubmit">Save new password</button>
+      </form>
+    </div>
+  </div>
+
   <div id="adminApp" hidden>
     <header class="admin-header">
       <div class="container">

@@ -12,6 +12,7 @@
     prices: "prices",
     photos: "photos",
     notes: "notes",
+    adminMeta: "adminMeta",
   };
 
   let app = null;
@@ -211,6 +212,54 @@
   }
 
   /**
+   * First-login gate: true until admin has changed password once (Firestore flag).
+   */
+  async function mustChangePassword() {
+    if (!ready || !db || !auth || !auth.currentUser) return false;
+    try {
+      const snap = await db.collection(COLLECTION).doc(DOC_KEYS.adminMeta || "adminMeta").get();
+      if (!snap.exists) return true;
+      const payload = snap.data();
+      const data = payload && payload.data !== undefined ? payload.data : payload;
+      return !(data && data.passwordChanged === true);
+    } catch (err) {
+      console.warn("[AlmaCloud] mustChangePassword check failed:", err.message);
+      // If we cannot read meta yet, still force change for safety on first setups
+      return true;
+    }
+  }
+
+  /**
+   * Update Firebase Auth password and mark first-change complete in Firestore.
+   */
+  async function changeAdminPassword(newPassword) {
+    if (!auth || !auth.currentUser) throw new Error("Not signed in");
+    const pass = String(newPassword || "");
+    if (pass.length < 8) throw new Error("Password must be at least 8 characters");
+    await auth.currentUser.updatePassword(pass);
+    writeReady = true;
+    if (db) {
+      await db
+        .collection(COLLECTION)
+        .doc("adminMeta")
+        .set(
+          {
+            data: {
+              passwordChanged: true,
+              changedAt: new Date().toISOString(),
+              changedBy: auth.currentUser.email || "admin",
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: auth.currentUser.email || "admin",
+          },
+          { merge: false }
+        );
+    }
+    emitStatus();
+    return true;
+  }
+
+  /**
    * Push local document to Firestore (admin must be signed in).
    * Silent no-op if cloud not ready / applying remote / not signed in.
    */
@@ -291,6 +340,8 @@
     status,
     signInAdmin,
     signOutAdmin,
+    mustChangePassword,
+    changeAdminPassword,
     push,
     pushStays,
     pushPrices,

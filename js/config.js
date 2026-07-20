@@ -25,10 +25,11 @@ window.ALMA_CONFIG = {
   facebookMessengerUrl: "",
 
   /**
-   * Local-only admin password (used only if Firebase is not configured).
-   * Production uses Firebase Email/Password on the admin login form — never commit Auth passwords.
+   * Local-only default password (used only if Firebase is not configured).
+   * On first successful login the admin must change it; the new password is stored in this browser only.
+   * Production uses Firebase Auth — never commit real Auth passwords here.
    */
-  adminPassword: "almasadmin",
+  adminPassword: "ChangeMeOnFirstLogin",
 
   /**
    * Firebase web config is NOT stored here (avoids GitHub secret scanning).

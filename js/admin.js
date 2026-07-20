@@ -1,10 +1,13 @@
 /**
- * Admin: password gate, availability calendar, room photos, inbox
+ * Admin: password gate, first-login password change, availability, photos, inbox
  */
 (function () {
   const SESSION_KEY = "almas_haven_admin_session";
+  const LOCAL_PW_KEY = "almas_haven_admin_local_pw_v1";
+  const LOCAL_PW_CHANGED_KEY = "almas_haven_admin_local_pw_changed_v1";
   const toastEl = document.getElementById("toast");
   let toastTimer;
+  let pendingLocalMode = false;
 
   function toast(msg) {
     if (!toastEl) return;
@@ -14,8 +17,31 @@
     toastTimer = setTimeout(() => (toastEl.hidden = true), 3500);
   }
 
-  function expectedPassword() {
+  function defaultLocalPassword() {
     return (window.ALMA_CONFIG && window.ALMA_CONFIG.adminPassword) || "almasadmin";
+  }
+
+  function expectedLocalPassword() {
+    try {
+      const stored = localStorage.getItem(LOCAL_PW_KEY);
+      if (stored) return stored;
+    } catch {
+      /* ignore */
+    }
+    return defaultLocalPassword();
+  }
+
+  function localPasswordNeedsChange() {
+    try {
+      return localStorage.getItem(LOCAL_PW_CHANGED_KEY) !== "1";
+    } catch {
+      return true;
+    }
+  }
+
+  function saveLocalPassword(newPw) {
+    localStorage.setItem(LOCAL_PW_KEY, newPw);
+    localStorage.setItem(LOCAL_PW_CHANGED_KEY, "1");
   }
 
   function isLoggedIn() {
@@ -35,11 +61,13 @@
     }
   }
 
-  function showApp(show) {
+  function showScreen(which) {
     const login = document.getElementById("adminLogin");
+    const change = document.getElementById("adminChangePw");
     const app = document.getElementById("adminApp");
-    if (login) login.hidden = !!show;
-    if (app) app.hidden = !show;
+    if (login) login.hidden = which !== "login";
+    if (change) change.hidden = which !== "change";
+    if (app) app.hidden = which !== "app";
   }
 
   function cloudEnabled() {
@@ -53,7 +81,7 @@
     if (cloudEnabled()) {
       if (lead) {
         lead.textContent =
-          "Sign in with your Firebase admin email and password. Changes sync to every device. Credentials stay on this session only — not in the website code.";
+          "Sign in with your Firebase admin email and password. On first sign-in you will set a new password.";
       }
       if (emailLabel) emailLabel.hidden = false;
       if (emailInput) {
@@ -63,13 +91,48 @@
     } else {
       if (lead) {
         lead.textContent =
-          "Cloud is not configured. Enter the local admin password (this browser only).";
+          "Cloud is not configured. Enter the local admin password. You will change it on first sign-in.";
       }
       if (emailLabel) emailLabel.hidden = true;
       if (emailInput) {
         emailInput.required = false;
         emailInput.hidden = true;
       }
+    }
+  }
+
+  async function enterAdminAfterAuth(opts) {
+    const { localMode, skipPwCheck } = opts || {};
+    pendingLocalMode = !!localMode;
+
+    if (!skipPwCheck) {
+      let mustChange = false;
+      if (localMode) {
+        mustChange = localPasswordNeedsChange();
+      } else if (window.AlmaCloud) {
+        mustChange = await window.AlmaCloud.mustChangePassword();
+      }
+      if (mustChange) {
+        setLoggedIn(true);
+        showScreen("change");
+        document.getElementById("adminNewPw")?.focus();
+        toast("Please set a new password to continue");
+        return;
+      }
+    }
+
+    setLoggedIn(true);
+    showScreen("app");
+    initAdminApp();
+    if (!localMode && window.AlmaCloud) {
+      toast("Signed in · cloud sync on");
+      try {
+        await window.AlmaCloud.uploadLocalToCloud();
+      } catch {
+        /* optional */
+      }
+    } else {
+      toast("Signed in");
     }
   }
 
@@ -91,20 +154,9 @@
     try {
       if (cloudEnabled()) {
         await window.AlmaCloud.signInAdmin(emailInput.value, passInput.value);
-        setLoggedIn(true);
-        showApp(true);
-        initAdminApp();
-        toast("Signed in · cloud sync on");
-        try {
-          await window.AlmaCloud.uploadLocalToCloud();
-        } catch {
-          /* optional first push */
-        }
-      } else if (passInput.value === expectedPassword()) {
-        setLoggedIn(true);
-        showApp(true);
-        initAdminApp();
-        toast("Signed in (local only)");
+        await enterAdminAfterAuth({ localMode: false });
+      } else if (passInput.value === expectedLocalPassword()) {
+        await enterAdminAfterAuth({ localMode: true });
       } else {
         err.hidden = false;
         passInput.focus();
@@ -119,8 +171,63 @@
         submitBtn.disabled = false;
         submitBtn.textContent = "Sign in";
       }
-      // Do not keep password in the form after attempt
       if (passInput) passInput.value = "";
+    }
+  });
+
+  /* ---- First login password change ---- */
+  document.getElementById("adminChangePwForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const p1 = document.getElementById("adminNewPw");
+    const p2 = document.getElementById("adminNewPw2");
+    const err = document.getElementById("adminChangePwError");
+    const btn = document.getElementById("adminChangePwSubmit");
+    err.hidden = true;
+
+    const a = (p1.value || "").trim();
+    const b = (p2.value || "").trim();
+    if (a.length < 8) {
+      err.textContent = "Password must be at least 8 characters.";
+      err.hidden = false;
+      return;
+    }
+    if (a !== b) {
+      err.textContent = "Passwords do not match.";
+      err.hidden = false;
+      return;
+    }
+    if (a === defaultLocalPassword() || a.toLowerCase() === "almasadmin") {
+      err.textContent = "Choose a different password than the default.";
+      err.hidden = false;
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+    }
+
+    try {
+      if (pendingLocalMode || !cloudEnabled()) {
+        saveLocalPassword(a);
+        toast("Password updated for this browser");
+        await enterAdminAfterAuth({ localMode: true, skipPwCheck: true });
+      } else {
+        await window.AlmaCloud.changeAdminPassword(a);
+        toast("Password updated · use it next time you sign in");
+        await enterAdminAfterAuth({ localMode: false, skipPwCheck: true });
+      }
+      p1.value = "";
+      p2.value = "";
+    } catch (ex) {
+      console.error(ex);
+      err.textContent = ex.message || "Could not update password.";
+      err.hidden = false;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Save new password";
+      }
     }
   });
 
@@ -134,7 +241,8 @@
       }
     }
     setLoggedIn(false);
-    showApp(false);
+    pendingLocalMode = false;
+    showScreen("login");
     const passInput = document.getElementById("adminPasswordInput");
     const emailInput = document.getElementById("adminEmailInput");
     if (passInput) passInput.value = "";
@@ -1099,18 +1207,23 @@
     renderInbox();
   }
 
-  // Wait briefly for Firebase SDK + AlmaCloud init before choosing login mode
+  // Wait for Firebase SDK + AlmaCloud init before choosing login mode
   function bootAdmin() {
     setupLoginFormMode();
     if (isLoggedIn() && cloudEnabled()) {
       // Session flag alone is not enough for writes — require fresh cloud login
       setLoggedIn(false);
-      showApp(false);
+      showScreen("login");
     } else if (isLoggedIn() && !cloudEnabled()) {
-      showApp(true);
-      initAdminApp();
+      if (localPasswordNeedsChange()) {
+        pendingLocalMode = true;
+        showScreen("change");
+      } else {
+        showScreen("app");
+        initAdminApp();
+      }
     } else {
-      showApp(false);
+      showScreen("login");
     }
   }
 
