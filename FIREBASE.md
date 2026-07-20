@@ -1,23 +1,20 @@
-# Firebase — Realtime Database cloud sync
+# Firebase — Cloud Firestore sync
 
-This site uses **Firebase Authentication** + **Realtime Database** (not Firestore).
-
-Your database URL:
-
-`https://almas-haven-c1998-default-rtdb.asia-southeast1.firebasedatabase.app`
+This site uses **Firebase Authentication** + **Cloud Firestore** (not Realtime Database).
 
 ---
 
-## Realtime Database rules (required)
+## Firestore security rules (required)
 
-Firebase Console → **Realtime Database → Rules** → Publish:
+Firebase Console → **Firestore Database → Rules** → Publish:
 
-```json
-{
-  "rules": {
-    "almaHaven": {
-      ".read": true,
-      ".write": "auth != null"
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /almaHaven/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }
@@ -50,28 +47,38 @@ Firebase Console → **Realtime Database → Rules** → Publish:
 | Secret | Value |
 |--------|--------|
 | `FIREBASE_API_KEY` | from web config |
-| `FIREBASE_AUTH_DOMAIN` | `…firebaseapp.com` |
+| `FIREBASE_AUTH_DOMAIN` | `….firebaseapp.com` |
 | `FIREBASE_PROJECT_ID` | `almas-haven-c1998` |
 | `FIREBASE_STORAGE_BUCKET` | storage bucket |
 | `FIREBASE_MESSAGING_SENDER_ID` | sender id |
 | `FIREBASE_APP_ID` | app id |
 | `FIREBASE_MEASUREMENT_ID` | optional |
-| `FIREBASE_DATABASE_URL` | `https://almas-haven-c1998-default-rtdb.asia-southeast1.firebasedatabase.app` |
 
-Deploy workflow injects these into live `js/firebase-config.js` (see `docs/deploy-pages.yml.example`).
+`FIREBASE_DATABASE_URL` is **not** needed for Firestore (Realtime Database only).
+
+Deploy workflow injects secrets into live `js/firebase-config.js` (see `docs/deploy-pages.yml.example`).
 
 ---
 
-## Data layout in RTDB
+## Data layout in Firestore
 
-```
-almaHaven/
-  stays/
-  prices/
-  photos/
-  notes/
-  adminMeta/
-```
+Collection `almaHaven` documents:
+
+- `stays` — guest occupancy  
+- `prices` — room price overrides  
+- `photos` — room photo overrides  
+- `notes` — admin day notes  
+- `adminMeta` — first-login password flag  
+
+---
+
+## Optional: turn off Realtime Database
+
+If you no longer use RTDB:
+
+1. Firebase Console → **Realtime Database**  
+2. You can leave it empty or disable / delete when ready  
+3. Do **not** use RTDB rules for this website anymore  
 
 ---
 

@@ -26,7 +26,6 @@ jobs:
           FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
-          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
         run: |
           python3 << 'PY'
           import json, os
@@ -38,12 +37,9 @@ jobs:
             "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID") or "",
             "appId": os.environ.get("FIREBASE_APP_ID") or "",
             "measurementId": os.environ.get("FIREBASE_MEASUREMENT_ID") or "",
-            "databaseURL": os.environ.get("FIREBASE_DATABASE_URL") or "",
           }
-          if not cfg["measurementId"]:
-            del cfg["measurementId"]
-          if not cfg["databaseURL"]:
-            del cfg["databaseURL"]
+          if not cfg.get("measurementId"):
+            cfg.pop("measurementId", None)
           open("js/firebase-config.js","w",encoding="utf-8").write(
             "window.ALMA_FIREBASE = " + json.dumps(cfg, indent=2) + ";\n"
           )

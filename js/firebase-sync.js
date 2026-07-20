@@ -1,12 +1,12 @@
 /**
- * Firebase cloud sync for Alma's Haven (Realtime Database).
+ * Firebase cloud sync for Alma's Haven (Cloud Firestore).
  * Public: read-only listeners (availability, prices, photos).
  * Admin: after sign-in, writes sync to all devices.
  *
  * Falls back to localStorage when Firebase is not configured or offline.
  */
 (function () {
-  const ROOT = "almaHaven";
+  const COLLECTION = "almaHaven";
   const DOC_KEYS = {
     stays: "stays",
     prices: "prices",
@@ -39,7 +39,7 @@
     return (
       typeof firebase !== "undefined" &&
       firebase.app &&
-      firebase.database &&
+      firebase.firestore &&
       firebase.auth
     );
   }
@@ -51,16 +51,12 @@
       ready,
       writeReady,
       user: auth && auth.currentUser ? auth.currentUser.email : null,
-      engine: "rtdb",
+      engine: "firestore",
     };
   }
 
   function emitStatus() {
     window.dispatchEvent(new CustomEvent("alma:cloud-status", { detail: status() }));
-  }
-
-  function pathFor(key) {
-    return `${ROOT}/${key}`;
   }
 
   async function init() {
@@ -72,17 +68,12 @@
         return false;
       }
       if (!sdkReady()) {
-        console.warn("[AlmaCloud] Firebase Auth/Database SDK not loaded.");
+        console.warn("[AlmaCloud] Firebase Auth/Firestore SDK not loaded.");
         emitStatus();
         return false;
       }
       try {
         const c = firebaseCfg();
-        const databaseURL =
-          c.databaseURL ||
-          (c.projectId
-            ? `https://${c.projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`
-            : "");
         if (!firebase.apps.length) {
           app = firebase.initializeApp({
             apiKey: c.apiKey,
@@ -91,18 +82,22 @@
             storageBucket: c.storageBucket || undefined,
             messagingSenderId: c.messagingSenderId || undefined,
             appId: c.appId,
-            databaseURL: databaseURL || undefined,
             measurementId: c.measurementId || undefined,
           });
         } else {
           app = firebase.app();
         }
-        db = firebase.database();
+        db = firebase.firestore();
         auth = firebase.auth();
+        try {
+          await db.enablePersistence({ synchronizeTabs: true });
+        } catch {
+          /* multi-tab / unsupported */
+        }
         ready = true;
         startPublicListeners();
         emitStatus();
-        console.info("[AlmaCloud] Connected to Realtime Database — data syncs across devices.");
+        console.info("[AlmaCloud] Connected to Firestore — data syncs across devices.");
         return true;
       } catch (err) {
         console.error("[AlmaCloud] Init failed:", err);
@@ -171,19 +166,20 @@
     );
   }
 
-  function listen(key, onData) {
+  function listen(docId, onData) {
     if (!db) return () => {};
-    const ref = db.ref(pathFor(key));
-    const handler = (snap) => {
-      const payload = snap.val();
-      if (payload == null) return;
-      if (payload.data !== undefined) onData(payload.data);
-      else onData(payload);
-    };
-    ref.on("value", handler, (err) => {
-      console.warn("[AlmaCloud] Listener error:", key, err && err.message);
-    });
-    return () => ref.off("value", handler);
+    return db
+      .collection(COLLECTION)
+      .doc(docId)
+      .onSnapshot(
+        (snap) => {
+          if (!snap.exists) return;
+          const payload = snap.data();
+          if (payload && payload.data !== undefined) onData(payload.data);
+          else onData(payload);
+        },
+        (err) => console.warn("[AlmaCloud] Listener error:", docId, err && err.message)
+      );
   }
 
   async function signInAdmin(email, password) {
@@ -216,9 +212,9 @@
   async function mustChangePassword() {
     if (!ready || !db || !auth || !auth.currentUser) return false;
     try {
-      const snap = await db.ref(pathFor(DOC_KEYS.adminMeta)).once("value");
-      if (!snap.exists()) return true;
-      const payload = snap.val();
+      const snap = await db.collection(COLLECTION).doc(DOC_KEYS.adminMeta).get();
+      if (!snap.exists) return true;
+      const payload = snap.data();
       const data = payload && payload.data !== undefined ? payload.data : payload;
       return !(data && data.passwordChanged === true);
     } catch (err) {
@@ -234,33 +230,39 @@
     await auth.currentUser.updatePassword(pass);
     writeReady = true;
     if (db) {
-      await db.ref(pathFor(DOC_KEYS.adminMeta)).set({
-        data: {
-          passwordChanged: true,
-          changedAt: new Date().toISOString(),
-          changedBy: auth.currentUser.email || "admin",
-        },
-        updatedAt: Date.now(),
-        updatedBy: auth.currentUser.email || "admin",
-      });
+      await db
+        .collection(COLLECTION)
+        .doc(DOC_KEYS.adminMeta)
+        .set({
+          data: {
+            passwordChanged: true,
+            changedAt: new Date().toISOString(),
+            changedBy: auth.currentUser.email || "admin",
+          },
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: auth.currentUser.email || "admin",
+        });
     }
     emitStatus();
     return true;
   }
 
-  async function push(key, data) {
-    if (applyingRemote[key]) return { ok: false, reason: "remote-apply" };
+  async function push(docId, data) {
+    if (applyingRemote[docId]) return { ok: false, reason: "remote-apply" };
     if (!ready || !db) return { ok: false, reason: "not-ready" };
     if (!auth || !auth.currentUser) return { ok: false, reason: "not-signed-in" };
     try {
-      await db.ref(pathFor(key)).set({
-        data,
-        updatedAt: Date.now(),
-        updatedBy: auth.currentUser.email || "admin",
-      });
+      await db
+        .collection(COLLECTION)
+        .doc(docId)
+        .set({
+          data,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: auth.currentUser.email || "admin",
+        });
       return { ok: true };
     } catch (err) {
-      console.error("[AlmaCloud] Push failed:", key, err);
+      console.error("[AlmaCloud] Push failed:", docId, err);
       return { ok: false, reason: err.message || "push-failed" };
     }
   }
@@ -311,8 +313,7 @@
   }
 
   window.AlmaCloud = {
-    ROOT,
-    COLLECTION: ROOT,
+    COLLECTION,
     DOC_KEYS,
     init,
     isConfigured,
