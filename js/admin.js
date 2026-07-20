@@ -562,11 +562,8 @@
   }
 
   /* ---- Availability: all units per date + guest stays ---- */
-  const DAY_NOTE_KEY = "__day__";
-
   function initAvailability() {
     const Av = window.AlmaAvailability;
-    const Notes = window.AlmaAdminNotes;
     const calLabel = document.getElementById("adminCalLabel");
     const calGrid = document.getElementById("adminCalGrid");
     if (!Av || !calGrid) return;
@@ -658,7 +655,11 @@
                   <strong>Check-in:</strong> ${escapeHtmlAdmin(formatShort(row.stay.checkin))}
                   · <strong>Check-out:</strong> ${escapeHtmlAdmin(formatShort(row.stay.checkout))}
                 </p>
-                ${row.stay.adminNote ? `<p class="lp-note">${escapeHtmlAdmin(row.stay.adminNote)}</p>` : ""}
+                ${
+                  row.stay.adminNote
+                    ? `<p class="lp-note"><strong>Room note:</strong> ${escapeHtmlAdmin(row.stay.adminNote)}</p>`
+                    : ""
+                }
               </div>
               <button type="button" class="btn btn-ghost btn-sm" data-edit-stay="${row.stay.id}"
                 data-room="${row.roomTypeId}" data-unit="${row.unit}" data-label="${escapeHtmlAdmin(row.label)}">Edit</button>
@@ -679,12 +680,17 @@
       list.innerHTML = html || '<p class="lp-note">No rooms configured.</p>';
     }
 
+    /** Gold dot when any room stay on this date has a private note */
+    function dateHasRoomNote(dateStr) {
+      const day = Av.getDayOccupancy(dateStr);
+      return day.rows.some((r) => r.occupied && r.stay && r.stay.adminNote);
+    }
+
     function updateDayPanel() {
       const title = document.getElementById("adminDayTitle");
       const sub = document.getElementById("adminDaySub");
       const controls = document.getElementById("adminDayControls");
       const statusEl = document.getElementById("adminDayStatus");
-      const noteEl = document.getElementById("adminDayNote");
 
       if (!selectedDate) {
         title.textContent = "Select a date";
@@ -695,7 +701,6 @@
       }
 
       const day = Av.getDayOccupancy(selectedDate);
-      const note = Notes ? Notes.getNote(DAY_NOTE_KEY, selectedDate) : "";
       title.textContent = formatNiceDate(selectedDate);
       sub.textContent = `${day.free} available · ${day.occupied} reserved · ${day.total} total units`;
       controls.hidden = false;
@@ -710,7 +715,6 @@
         label = "Fully booked";
       }
       statusEl.innerHTML = `<span class="admin-status-pill ${pill}">${label}</span>`;
-      noteEl.value = note;
       hideAssignBox();
       renderUnitList();
     }
@@ -742,9 +746,9 @@
           const dayNum = Number(dateStr.slice(-2));
           const levelClass =
             day.level === "full" ? "unavailable full" : day.level === "partial" ? "partial" : "available";
-          const hasNote = Notes && Notes.hasNote(DAY_NOTE_KEY, dateStr);
+          const hasNote = dateHasRoomNote(dateStr);
           const selected = dateStr === selectedDate ? "is-selected" : "";
-          const title = `${dateStr} · ${day.free} available / ${day.occupied} reserved${hasNote ? " · note" : ""}`;
+          const title = `${dateStr} · ${day.free} available / ${day.occupied} reserved${hasNote ? " · room note" : ""}`;
           html += `<button type="button" class="cal-day ${levelClass} ${past ? "past" : ""} ${selected} ${hasNote ? "has-note" : ""} admin-day" data-date="${dateStr}" title="${title}"><span class="cal-day-num">${dayNum}</span>${hasNote ? '<span class="cal-note-dot" aria-hidden="true"></span>' : ""}</button>`;
         });
         html += `</div>`;
@@ -813,22 +817,6 @@
       toast("Stay removed");
     });
 
-    document.getElementById("adminDayNoteSave")?.addEventListener("click", () => {
-      if (!selectedDate || !Notes) return;
-      const text = document.getElementById("adminDayNote").value;
-      Notes.setNote(DAY_NOTE_KEY, selectedDate, text);
-      renderAdminCal();
-      toast(text.trim() ? "Day note saved" : "Note cleared");
-    });
-
-    document.getElementById("adminDayNoteClear")?.addEventListener("click", () => {
-      if (!selectedDate || !Notes) return;
-      Notes.clearNote(DAY_NOTE_KEY, selectedDate);
-      document.getElementById("adminDayNote").value = "";
-      renderAdminCal();
-      toast("Note cleared");
-    });
-
     document.getElementById("adminCalPrev").addEventListener("click", () => {
       viewMonth--;
       if (viewMonth < 0) {
@@ -878,7 +866,6 @@
     });
 
     window.addEventListener("alma:availability-updated", renderAdminCal);
-    window.addEventListener("alma:admin-notes-updated", renderAdminCal);
     renderAdminCal();
   }
 

@@ -132,14 +132,15 @@
             <strong style="color:#1a9a52">green</strong> = available ·
             <strong style="color:#c9891a">amber</strong> = limited availability ·
             <strong style="color:#c43228">red</strong> = fully booked.
-            Guest names and notes are <strong>admin only</strong>.
+            Guest names and room notes are <strong>admin only</strong>.
+            Add a note when you assign or edit a specific room.
           </p>
 
           <div class="booking-legend admin-legend">
             <span><i class="leg available"></i> Available</span>
             <span><i class="leg partial"></i> Limited availability</span>
             <span><i class="leg unavailable"></i> Fully booked</span>
-            <span><i class="leg admin-note-leg"></i> Day note</span>
+            <span><i class="leg admin-note-leg"></i> Room has note</span>
           </div>
 
           <div class="admin-cal-layout admin-cal-layout--wide">
@@ -175,8 +176,8 @@
                       </label>
                     </div>
                     <label class="admin-field">
-                      Private note <span class="admin-muted">(optional)</span>
-                      <input type="text" id="assignNote" placeholder="Deposit, FB name, etc." />
+                      Private note for this room <span class="admin-muted">(optional · admin only)</span>
+                      <input type="text" id="assignNote" placeholder="e.g. Deposit paid · FB name · special request" />
                     </label>
                     <div class="admin-actions" style="margin-top:0.5rem;flex-wrap:wrap">
                       <button type="submit" class="btn btn-primary" id="assignSave">Save stay</button>
@@ -184,15 +185,6 @@
                       <button type="button" class="btn btn-ghost" id="assignRemove" hidden>Remove stay</button>
                     </div>
                   </form>
-                </div>
-
-                <label class="admin-field" style="margin-top:1rem">
-                  Private day note <span class="admin-muted">(only you see this)</span>
-                  <textarea id="adminDayNote" rows="2" placeholder="e.g. Full house event · hold for walk-ins"></textarea>
-                </label>
-                <div class="admin-actions" style="margin-top:0.5rem;flex-wrap:wrap">
-                  <button type="button" class="btn btn-ghost" id="adminDayNoteSave">Save day note</button>
-                  <button type="button" class="btn btn-ghost" id="adminDayNoteClear">Clear note</button>
                 </div>
               </div>
             </aside>
@@ -281,7 +273,6 @@
   <script src="js/firebase-sync.js"></script>
   <script src="js/room-prices.js"></script>
   <script src="js/room-photos.js"></script>
-  <script src="js/admin-notes.js"></script>
   <script src="js/live-agent.js"></script>
   <script src="js/availability.js"></script>
   <script src="js/notifications.js"></script>
