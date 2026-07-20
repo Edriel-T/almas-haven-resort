@@ -578,31 +578,25 @@
     startLivePoll();
   }
 
-  function beginLiveIntake() {
+  async function beginLiveIntake() {
     intakeName = "";
     intakeNeed = "";
     openPanel();
     setMode("ask_name");
-    appendMessage(
-      "bot",
-      "Sure — I'll connect you to a live agent. First, what is your name?",
-      "Alma's Haven Bot"
-    );
+    await botReply("Sure — I'll connect you to a live agent. First, what is your name?");
   }
 
-  function requestLiveAgent() {
+  async function requestLiveAgent() {
     openPanel();
     if (!agentOnline()) {
-      appendMessage(
-        "bot",
-        "No live agent is online right now. Leave a short note and we'll open Facebook so you can message the resort page.",
-        "Alma's Haven Bot"
+      await botReply(
+        "No live agent is online right now. Leave a short note and we'll open Facebook so you can message the resort page."
       );
       openAgentModal("reservation");
       return;
     }
     // Online: name → need → queue/connect
-    beginLiveIntake();
+    await beginLiveIntake();
   }
 
   function renderSuggestions() {
@@ -807,12 +801,10 @@
     else closePanel();
   }
 
-  function seedWelcome() {
+  async function seedWelcome() {
     if (messagesEl.children.length) return;
-    appendMessage(
-      "bot",
-      `Hi! I'm the FAQ assistant for ${cfg().resortName || "Alma's Haven Resort"}. Ask me anything about the resort, or request a live agent for bookings and special help.`,
-      "Alma's Haven Bot"
+    await botReply(
+      `Hi! I'm the FAQ assistant for ${cfg().resortName || "Alma's Haven Resort"}. Ask me anything about the resort, or request a live agent for bookings and special help.`
     );
     appendMessage(
       "system",
@@ -835,9 +827,11 @@
       directions: "How do I get there? I need directions.",
     };
     openPanel();
-    if (!messagesEl.children.length) seedWelcome();
     const text = map[key] || key;
-    handleUserMessage(text);
+    (async () => {
+      if (!messagesEl.children.length) await seedWelcome();
+      await handleUserMessage(text);
+    })();
   }
 
   function bind() {
