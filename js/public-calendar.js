@@ -60,7 +60,7 @@
       const body = root.querySelector("#publicDayBody");
       if (!selectedDate) {
         hint.hidden = false;
-        hint.textContent = "Tap a date to see which rooms are available or occupied.";
+        hint.textContent = "Tap a date to see which rooms are available or occupied. Tap again to hide.";
         body.hidden = true;
         body.innerHTML = "";
         return;
@@ -68,12 +68,9 @@
 
       const day = Av.getDayOccupancy(selectedDate);
       const breakdown = Av.getPublicDayBreakdown(selectedDate);
-      const past = selectedDate < Av.todayStr();
 
       hint.hidden = false;
-      hint.textContent = past
-        ? `${formatNiceDate(selectedDate)} · past date`
-        : `${formatNiceDate(selectedDate)} · ${day.free} free · ${day.occupied} occupied`;
+      hint.textContent = `${formatNiceDate(selectedDate)} · ${day.free} free · ${day.occupied} occupied · tap date again to hide`;
 
       body.hidden = false;
       let html = "";
@@ -117,6 +114,12 @@
         `${monthNames[viewMonth]} ${viewYear}`;
       const weeks = Av.monthMatrix(viewYear, viewMonth);
       const today = Av.todayStr();
+
+      // Drop selection if it became a past date (e.g. after midnight)
+      if (selectedDate && selectedDate < today) {
+        selectedDate = null;
+      }
+
       const days = ["S", "M", "T", "W", "T", "F", "S"];
       let html = `<div class="cal-weekdays">${days.map((d) => `<span>${d}</span>`).join("")}</div>`;
       weeks.forEach((week) => {
@@ -127,25 +130,32 @@
             return;
           }
           const past = dateStr < today;
+          const dayNum = Number(dateStr.slice(-2));
+
+          if (past) {
+            // Past dates: visible but not clickable
+            html += `<span class="cal-day past" title="Past date" aria-disabled="true">${dayNum}</span>`;
+            return;
+          }
+
           const day = Av.getDayOccupancy(dateStr);
           let status = "available";
-          if (past) status = "past";
-          else if (day.level === "full") status = "unavailable full";
+          if (day.level === "full") status = "unavailable full";
           else if (day.level === "partial") status = "partial";
-          else status = "available";
           const selected = dateStr === selectedDate ? "is-selected" : "";
-          const dayNum = Number(dateStr.slice(-2));
-          const title = past
-            ? dateStr
+          const title = selected
+            ? `${dateStr} · click again to hide details`
             : `${dateStr} · ${day.free} free / ${day.occupied} occupied — click for details`;
-          html += `<button type="button" class="cal-day ${status} ${selected}" data-public-date="${dateStr}" title="${title}">${dayNum}</button>`;
+          html += `<button type="button" class="cal-day ${status} ${selected}" data-public-date="${dateStr}" title="${title}" aria-pressed="${selected ? "true" : "false"}">${dayNum}</button>`;
         });
         html += `</div>`;
       });
       root.querySelector("#publicCalGrid").innerHTML = html;
       root.querySelectorAll("[data-public-date]").forEach((btn) => {
         btn.addEventListener("click", () => {
-          selectedDate = btn.getAttribute("data-public-date");
+          const date = btn.getAttribute("data-public-date");
+          // Toggle: same date again hides details
+          selectedDate = selectedDate === date ? null : date;
           render();
         });
       });
