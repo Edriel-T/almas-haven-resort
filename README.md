@@ -1,6 +1,6 @@
 # Alma's Haven Resort — Website
 
-**Live site:** https://edriel-t.github.io/almas-haven-resort/
+**Live site:** https://almashaven.edrielcabansi.com/
 
 Multi-page marketing site for **Alma's Haven Resort** (Dasol, Pangasinan) with:
 
@@ -50,8 +50,8 @@ To change the couple room photo: replace `Images/Couple room.jpg` or update the 
 
 ### Submit to Google (recommended)
 1. Go to [Google Search Console](https://search.google.com/search-console)
-2. Add property: `https://edriel-t.github.io/almas-haven-resort/`
-3. Submit sitemap: `https://edriel-t.github.io/almas-haven-resort/sitemap.xml`
+2. Add property: `https://almashaven.edrielcabansi.com/`
+3. Submit sitemap: `https://almashaven.edrielcabansi.com/sitemap.xml`
 4. Request indexing for the homepage
 
 Also keep your **Google Business Profile** for the resort updated and linked — that helps local search (“resort Dasol”) more than the website alone.
