@@ -17,19 +17,19 @@
   <!-- Login gate -->
   <div id="adminLogin" class="admin-login">
     <div class="admin-login-card">
-      <p class="lp-kicker">Private</p>
-      <h1>Admin access</h1>
+      <p class="lp-kicker">Staff only</p>
+      <h1>Admin sign-in</h1>
       <p class="section-lead" id="adminLoginLead">
-        Sign in with your Firebase admin account to manage the site. Credentials are not stored in the website code.
+        Sign in with your Firebase admin email and password to manage the resort website.
       </p>
       <form id="adminLoginForm">
         <label id="adminEmailLabel">
-          Admin email
-          <input type="email" id="adminEmailInput" name="email" autocomplete="username" placeholder="you@example.com" />
+          Email
+          <input type="email" id="adminEmailInput" name="email" autocomplete="username" placeholder="admin@example.com" />
         </label>
         <label>
           Password
-          <input type="password" id="adminPasswordInput" name="password" required autocomplete="current-password" placeholder="••••••••" />
+          <input type="password" id="adminPasswordInput" name="password" required autocomplete="current-password" placeholder="Enter password" />
         </label>
         <p class="form-note error" id="adminLoginError" hidden>Incorrect email or password.</p>
         <button type="submit" class="btn btn-primary btn-block" id="adminLoginSubmit">Sign in</button>
@@ -44,21 +44,21 @@
   <div id="adminChangePw" class="admin-login" hidden>
     <div class="admin-login-card">
       <p class="lp-kicker">Security</p>
-      <h1>Change password</h1>
+      <h1>Create a new password</h1>
       <p class="section-lead" id="adminChangePwLead">
-        For security, set a new password on first sign-in. Use a strong unique password.
+        For security, please create a new password on first sign-in. Use at least 8 characters.
       </p>
       <form id="adminChangePwForm">
         <label>
           New password
-          <input type="password" id="adminNewPw" name="newPassword" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" />
+          <input type="password" id="adminNewPw" name="newPassword" required minlength="8" autocomplete="new-password" placeholder="Minimum 8 characters" />
         </label>
         <label>
-          Confirm new password
-          <input type="password" id="adminNewPw2" name="confirmPassword" required minlength="8" autocomplete="new-password" placeholder="Repeat password" />
+          Confirm password
+          <input type="password" id="adminNewPw2" name="confirmPassword" required minlength="8" autocomplete="new-password" placeholder="Re-enter password" />
         </label>
         <p class="form-note error" id="adminChangePwError" hidden></p>
-        <button type="submit" class="btn btn-primary btn-block" id="adminChangePwSubmit">Save new password</button>
+        <button type="submit" class="btn btn-primary btn-block" id="adminChangePwSubmit">Save password</button>
       </form>
     </div>
   </div>
@@ -66,18 +66,18 @@
   <div id="adminApp" hidden>
     <header class="admin-header">
       <div class="container">
-        <div>
-          <h1>Admin</h1>
-          <p>Availability · prices · photos · live chat</p>
+        <div class="admin-header-text">
+          <h1>Admin panel</h1>
+          <p>Manage availability, rates, photos, and live chat</p>
         </div>
         <div class="admin-actions">
           <span class="admin-cloud-badge" id="adminCloudBadge" title="Cloud sync status">Cloud: …</span>
           <label class="admin-online-toggle admin-btn-light">
             <input type="checkbox" id="agentOnlineToggle" />
-            <span id="agentOnlineLabel">Go online as agent</span>
+            <span id="agentOnlineLabel">Go online</span>
           </label>
-          <button type="button" class="btn btn-ghost admin-btn-light" id="adminLogout">Log out</button>
-          <a class="btn btn-ghost admin-btn-light" href="index.html">← Website</a>
+          <button type="button" class="btn btn-ghost admin-btn-light" id="adminLogout">Sign out</button>
+          <a class="btn btn-ghost admin-btn-light" href="index.html">Website</a>
         </div>
       </div>
     </header>
@@ -87,17 +87,17 @@
         <div class="admin-tabs" role="tablist">
           <button type="button" class="admin-tab active" data-tab="live" role="tab" aria-selected="true">Live chat <span class="tab-count" id="tabLive"></span></button>
           <button type="button" class="admin-tab" data-tab="availability" role="tab" aria-selected="false">Availability</button>
-          <button type="button" class="admin-tab" data-tab="prices" role="tab" aria-selected="false">Prices</button>
-          <button type="button" class="admin-tab" data-tab="photos" role="tab" aria-selected="false">Room photos</button>
+          <button type="button" class="admin-tab" data-tab="prices" role="tab" aria-selected="false">Rates</button>
+          <button type="button" class="admin-tab" data-tab="photos" role="tab" aria-selected="false">Photos</button>
           <button type="button" class="admin-tab" data-tab="inbox" role="tab" aria-selected="false">Inbox <span class="tab-count" id="tabUnread"></span></button>
         </div>
 
-        <!-- Live chat with guests on the website -->
+        <!-- Live chat -->
         <section id="panel-live" class="admin-panel">
           <p class="section-lead">
-            Turn <strong>Go online as agent</strong> on so guests can chat here.
-            Guests give their <strong>name</strong> and <strong>what they need</strong> first, then join a
-            <strong>queue</strong> if you're busy. Offline guests go to Facebook only.
+            Turn <strong>Go online</strong> on so guests can chat with you on the website.
+            Guests share their name and request first, then join a queue if you are busy.
+            When you are offline, guests are directed to Facebook.
           </p>
           <div class="live-chat-layout">
             <aside class="live-chat-list" id="liveChatList"></aside>
@@ -107,40 +107,38 @@
               <div class="live-chat-messages" id="liveChatMessages"></div>
               <div class="live-chat-templates" id="liveChatTemplates" hidden></div>
               <form class="live-chat-compose" id="liveChatForm" hidden>
-                <input type="text" id="liveChatInput" placeholder="Reply to guest…" autocomplete="off" />
+                <input type="text" id="liveChatInput" placeholder="Type your reply" autocomplete="off" />
                 <button type="submit" class="btn btn-primary">Send</button>
-                <button type="button" class="btn btn-ghost" id="liveChatAccept" hidden>Accept from queue</button>
+                <button type="button" class="btn btn-ghost" id="liveChatAccept" hidden>Accept</button>
                 <button type="button" class="btn btn-ghost" id="liveChatEnd">End chat</button>
               </form>
             </div>
           </div>
         </section>
 
-        <!-- Availability: click date → all room units free/occupied -->
+        <!-- Availability -->
         <section id="panel-availability" class="admin-panel" hidden>
           <div class="admin-cal-toolbar">
-            <div class="admin-cal-nav" style="width:100%;justify-content:center">
-              <button type="button" class="btn btn-ghost" id="adminCalPrev">‹ Prev</button>
+            <div class="admin-cal-nav">
+              <button type="button" class="btn btn-ghost" id="adminCalPrev">‹ Previous</button>
               <strong id="adminCalLabel"></strong>
               <button type="button" class="btn btn-ghost" id="adminCalNext">Next ›</button>
             </div>
           </div>
 
           <p class="section-lead">
-            Click a date to see <strong>every room unit</strong> (e.g. Family Room · Room 1, Room 2…).
-            Assign a guest to a room with name, check-in, and check-out.
-            <strong style="color:#1a9a52">green</strong> = available ·
-            <strong style="color:#c9891a">amber</strong> = limited availability ·
-            <strong style="color:#c43228">red</strong> = fully booked.
-            Guest names and room notes are <strong>admin only</strong>.
-            Add a note when you assign or edit a specific room.
+            Select a date to view every room. Assign a guest with check-in and check-out dates.
+            <strong style="color:#1a9a52">Green</strong> = available ·
+            <strong style="color:#c9891a">Amber</strong> = limited availability ·
+            <strong style="color:#c43228">Red</strong> = fully booked.
+            Guest names and room notes are visible to staff only.
           </p>
 
           <div class="booking-legend admin-legend">
             <span><i class="leg available"></i> Available</span>
             <span><i class="leg partial"></i> Limited availability</span>
             <span><i class="leg unavailable"></i> Fully booked</span>
-            <span><i class="leg admin-note-leg"></i> Room has note</span>
+            <span><i class="leg admin-note-leg"></i> Room note</span>
           </div>
 
           <div class="admin-cal-layout admin-cal-layout--wide">
@@ -150,7 +148,7 @@
 
             <aside class="admin-day-panel admin-day-panel--wide" id="adminDayPanel">
               <h3 id="adminDayTitle">Select a date</h3>
-              <p class="lp-note" id="adminDaySub">Click a day to view room occupancy.</p>
+              <p class="lp-note" id="adminDaySub">Select a day to view room occupancy.</p>
               <div id="adminDayControls" hidden>
                 <div class="admin-day-status" id="adminDayStatus"></div>
                 <div class="admin-unit-list" id="adminUnitList"></div>
@@ -176,11 +174,11 @@
                       </label>
                     </div>
                     <label class="admin-field">
-                      Private note for this room <span class="admin-muted">(optional · admin only)</span>
-                      <input type="text" id="assignNote" placeholder="e.g. Deposit paid · FB name · special request" />
+                      Room note <span class="admin-muted">(optional · staff only)</span>
+                      <input type="text" id="assignNote" placeholder="Deposit, Facebook name, or special request" />
                     </label>
-                    <div class="admin-actions" style="margin-top:0.5rem;flex-wrap:wrap">
-                      <button type="submit" class="btn btn-primary" id="assignSave">Save stay</button>
+                    <div class="admin-actions admin-actions-row">
+                      <button type="submit" class="btn btn-primary" id="assignSave">Save</button>
                       <button type="button" class="btn btn-ghost" id="assignCancel">Cancel</button>
                       <button type="button" class="btn btn-ghost" id="assignRemove" hidden>Remove stay</button>
                     </div>
@@ -190,57 +188,57 @@
             </aside>
           </div>
 
-          <div class="admin-actions" style="margin-top:1.25rem;flex-wrap:wrap">
-            <button type="button" class="btn btn-ghost" id="exportAvail">Export stays</button>
+          <div class="admin-actions admin-actions-row" style="margin-top:1.25rem">
+            <button type="button" class="btn btn-ghost" id="exportAvail">Export data</button>
             <label class="btn btn-ghost" style="cursor:pointer">
-              Import stays
+              Import data
               <input type="file" id="importAvail" accept="application/json,.json" hidden />
             </label>
             <button type="button" class="btn btn-primary" id="clearAvail">Clear all stays</button>
           </div>
         </section>
 
-        <!-- Room prices -->
+        <!-- Rates -->
         <section id="panel-prices" class="admin-panel" hidden>
           <p class="section-lead">
-            Update nightly rates shown on the website (room cards, booking, chat).
-            Prices are saved in this browser and apply immediately for visitors on the same device/browser data.
+            Update nightly room rates shown on the website, booking form, and chat.
+            Changes sync to all devices when cloud is connected.
           </p>
           <div class="admin-price-list" id="adminPriceList"></div>
-          <div class="admin-actions" style="margin-top:1rem;flex-wrap:wrap">
-            <button type="button" class="btn btn-primary" id="priceSaveAll">Save all prices</button>
-            <button type="button" class="btn btn-ghost" id="priceResetAll">Reset all to defaults</button>
+          <div class="admin-actions admin-actions-row" style="margin-top:1rem">
+            <button type="button" class="btn btn-primary" id="priceSaveAll">Save rates</button>
+            <button type="button" class="btn btn-ghost" id="priceResetAll">Reset to defaults</button>
           </div>
         </section>
 
-        <!-- Room photos for clickable room cards -->
+        <!-- Photos -->
         <section id="panel-photos" class="admin-panel" hidden>
           <p class="section-lead">
-            Choose photos for each room. Guests see these when they open a room card.
-            Click a library photo to add it · click × on a selected photo to remove it.
+            Choose photos for each room type. Guests see these when they open a room card.
+            Select images from the library or upload from your device, then save.
           </p>
-          <label class="admin-field" style="max-width:420px;margin-bottom:1rem">
+          <label class="admin-field admin-field-room">
             Room
             <select id="photoRoomSelect"></select>
           </label>
           <p class="lp-note" id="photoDefaultsHint"></p>
 
-          <h3 class="admin-subhead">Selected photos for this room</h3>
+          <h3 class="admin-subhead">Selected photos</h3>
           <div class="admin-photo-selected" id="photoSelected"></div>
 
-          <h3 class="admin-subhead">Photo library — click to add</h3>
+          <h3 class="admin-subhead">Photo library</h3>
           <div class="admin-photo-library" id="photoLibrary"></div>
 
           <div class="admin-upload-row">
             <label class="btn btn-ghost" style="cursor:pointer">
-              Upload image from device
+              Upload images
               <input type="file" id="photoUpload" accept="image/*" multiple hidden />
             </label>
-            <span class="lp-note">Uploads stay in this browser only (for previews &amp; this site session).</span>
+            <span class="lp-note">Uploaded images are stored for this site session.</span>
           </div>
 
-          <div class="admin-actions" style="margin-top:1rem;flex-wrap:wrap">
-            <button type="button" class="btn btn-primary" id="photoSave">Save photos for room</button>
+          <div class="admin-actions admin-actions-row" style="margin-top:1rem">
+            <button type="button" class="btn btn-primary" id="photoSave">Save photos</button>
             <button type="button" class="btn btn-ghost" id="photoReset">Reset to defaults</button>
           </div>
         </section>

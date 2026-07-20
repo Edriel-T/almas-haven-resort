@@ -81,7 +81,7 @@
     if (cloudEnabled()) {
       if (lead) {
         lead.textContent =
-          "Sign in with your Firebase admin email and password. On first sign-in you will set a new password.";
+          "Sign in with your Firebase admin email and password. On first sign-in you will create a new password.";
       }
       if (emailLabel) emailLabel.hidden = false;
       if (emailInput) {
@@ -91,7 +91,7 @@
     } else {
       if (lead) {
         lead.textContent =
-          "Cloud is not configured. Enter the local admin password. You will change it on first sign-in.";
+          "Cloud is not configured. Enter the local admin password. You will create a new password on first sign-in.";
       }
       if (emailLabel) emailLabel.hidden = true;
       if (emailInput) {
@@ -116,7 +116,7 @@
         setLoggedIn(true);
         showScreen("change");
         document.getElementById("adminNewPw")?.focus();
-        toast("Please set a new password to continue");
+        toast("Please create a new password to continue");
         return;
       }
     }
@@ -125,7 +125,7 @@
     showScreen("app");
     initAdminApp();
     if (!localMode && window.AlmaCloud) {
-      toast("Signed in · cloud sync on");
+      toast("Signed in. Cloud sync is on.");
       try {
         await window.AlmaCloud.uploadLocalToCloud();
       } catch {
@@ -210,11 +210,11 @@
     try {
       if (pendingLocalMode || !cloudEnabled()) {
         saveLocalPassword(a);
-        toast("Password updated for this browser");
+        toast("Password saved for this browser");
         await enterAdminAfterAuth({ localMode: true, skipPwCheck: true });
       } else {
         await window.AlmaCloud.changeAdminPassword(a);
-        toast("Password updated · use it next time you sign in");
+        toast("Password saved. Use it the next time you sign in.");
         await enterAdminAfterAuth({ localMode: false, skipPwCheck: true });
       }
       p1.value = "";
@@ -271,21 +271,21 @@
     const s = detail || (window.AlmaCloud && window.AlmaCloud.status()) || {};
     el.classList.remove("is-ok", "is-warn", "is-off");
     if (!s.configured) {
-      el.textContent = "Cloud: off (local only)";
+      el.textContent = "Cloud: offline";
       el.classList.add("is-off");
-      el.title = "Firebase public config missing";
+      el.title = "Cloud is not configured";
     } else if (s.writeReady) {
-      el.textContent = "Cloud: synced";
+      el.textContent = "Cloud: connected";
       el.classList.add("is-ok");
       el.title = s.user ? `Signed in as ${s.user}` : "Cloud writes enabled";
     } else if (s.ready) {
-      el.textContent = "Cloud: read only";
+      el.textContent = "Cloud: view only";
       el.classList.add("is-warn");
-      el.title = "Connected for read. Sign in again to write.";
+      el.title = "Connected for reading. Sign in again to save changes.";
     } else {
       el.textContent = "Cloud: connecting…";
       el.classList.add("is-warn");
-      el.title = "Connecting to Firebase…";
+      el.title = "Connecting to cloud…";
     }
   }
 
@@ -308,7 +308,7 @@
     function syncToggleUI() {
       const on = Live.isAgentOnline();
       if (toggle) toggle.checked = on;
-      if (label) label.textContent = on ? "● You are online" : "Go online as agent";
+      if (label) label.textContent = on ? "● Online" : "Go online";
     }
 
     function startHeartbeat() {
@@ -327,11 +327,11 @@
       if (toggle.checked) {
         Live.goOnline("Alma's Haven agent");
         startHeartbeat();
-        toast("You are online — guests can chat on the website");
+        toast("You are online. Guests can chat on the website.");
       } else {
         Live.goOffline();
         stopHeartbeat();
-        toast("You are offline — guests will use Facebook");
+        toast("You are offline. Guests will use Facebook.");
       }
       syncToggleUI();
     });
@@ -349,7 +349,7 @@
       if (!activeLiveChatId) return;
       const chat = Live.getChat(activeLiveChatId);
       if (chat && chat.status === "queued") {
-        toast("Accept this guest from the queue first");
+        toast("Accept this guest from the queue first.");
         return;
       }
       const input = document.getElementById("liveChatInput");
@@ -366,17 +366,17 @@
       Live.acceptChat(activeLiveChatId);
       renderLiveList();
       renderLiveThread(activeLiveChatId);
-      toast("Guest accepted — you can chat now");
+      toast("Guest accepted. You can chat now.");
     });
 
     document.getElementById("liveChatEnd")?.addEventListener("click", () => {
       if (!activeLiveChatId) return;
-      if (!confirm("End this live chat? The next person in queue will be connected.")) return;
+      if (!confirm("End this chat? The next guest in the queue will be connected.")) return;
       Live.closeChat(activeLiveChatId);
       activeLiveChatId = null;
       renderLiveList();
       renderLiveThread(null);
-      toast("Chat ended · next in queue promoted if any");
+      toast("Chat ended.");
     });
 
     // Template chips (label on button, full formatted text sent)
@@ -428,12 +428,12 @@
     const q = Live.listQueued().length;
     const a = Live.listActive().length;
     if (tab) {
-      tab.textContent = chats.length ? `(${a} live · ${q} queue)` : "";
+      tab.textContent = chats.length ? `(${a} active · ${q} waiting)` : "";
     }
 
     if (!chats.length) {
       list.innerHTML =
-        '<p class="lp-note" style="padding:1rem">No website chats. Go online, then guests will share their name and what they need before joining.</p>';
+        '<p class="lp-note" style="padding:1rem">No active chats. Go online so guests can message you on the website.</p>';
       return;
     }
 
@@ -657,7 +657,7 @@
                 </p>
                 ${
                   row.stay.adminNote
-                    ? `<p class="lp-note"><strong>Room note:</strong> ${escapeHtmlAdmin(row.stay.adminNote)}</p>`
+                    ? `<p class="lp-note"><strong>Note:</strong> ${escapeHtmlAdmin(row.stay.adminNote)}</p>`
                     : ""
                 }
               </div>
@@ -670,7 +670,7 @@
               <div class="admin-unit-card__main">
                 <strong>${escapeHtmlAdmin(row.label)}</strong>
                 <span class="admin-unit-badge free">Available</span>
-                <p class="lp-note">Up to ${row.pax} pax · ₱${Number(row.price || 0).toLocaleString("en-PH")}/night</p>
+                <p class="lp-note">Up to ${row.pax} guests · ₱${Number(row.price || 0).toLocaleString("en-PH")} per night</p>
               </div>
               <button type="button" class="btn btn-primary btn-sm" data-assign-unit
                 data-room="${row.roomTypeId}" data-unit="${row.unit}" data-label="${escapeHtmlAdmin(row.label)}">Assign guest</button>
@@ -799,9 +799,9 @@
         else Av.addStay(payload);
         hideAssignBox();
         renderAdminCal();
-        toast(stayId ? "Stay updated" : "Guest assigned");
+        toast(stayId ? "Stay updated." : "Guest assigned.");
       } catch (err) {
-        toast(err.message || "Could not save stay");
+        toast(err.message || "Could not save this stay.");
       }
     });
 
@@ -810,11 +810,11 @@
     document.getElementById("assignRemove")?.addEventListener("click", () => {
       const stayId = document.getElementById("assignStayId").value;
       if (!stayId) return;
-      if (!confirm("Remove this stay? The room will show as available on those dates.")) return;
+      if (!confirm("Remove this stay? The room will become available on those dates.")) return;
       Av.removeStay(stayId);
       hideAssignBox();
       renderAdminCal();
-      toast("Stay removed");
+      toast("Stay removed.");
     });
 
     document.getElementById("adminCalPrev").addEventListener("click", () => {
@@ -841,7 +841,7 @@
       a.download = "almas-haven-stays.json";
       a.click();
       URL.revokeObjectURL(a.href);
-      toast("Exported stays");
+      toast("Data exported.");
     });
 
     document.getElementById("importAvail").addEventListener("change", async (e) => {
@@ -850,18 +850,18 @@
       try {
         Av.importJSON(await file.text());
         renderAdminCal();
-        toast("Imported");
+        toast("Data imported.");
       } catch {
-        toast("Import failed — use stays JSON export");
+        toast("Import failed. Use a valid stays export file.");
       }
       e.target.value = "";
     });
 
     document.getElementById("clearAvail").addEventListener("click", () => {
-      if (confirm("Clear ALL guest stays for every room?")) {
+      if (confirm("Clear all guest stays for every room?")) {
         Av.clearAll();
         renderAdminCal();
-        toast("All stays cleared");
+        toast("All stays cleared.");
       }
     });
 
@@ -886,13 +886,13 @@
           <div class="admin-price-card__info">
             <strong>${escapeHtmlAdmin(r.name)}</strong>
             <span>${escapeHtmlAdmin(r.floor)} · up to ${r.pax} pax · ${r.count} room${r.count === 1 ? "" : "s"}</span>
-            <span class="lp-note">Default: ₱${Number(def || 0).toLocaleString("en-PH")}${custom ? " · custom rate saved" : ""}</span>
+            <span class="lp-note">Default: ₱${Number(def || 0).toLocaleString("en-PH")}${custom ? " · custom rate active" : ""}</span>
           </div>
           <label class="admin-field admin-price-input">
-            Price (₱ / night)
+            Rate (₱ / night)
             <input type="number" min="0" step="100" inputmode="numeric" data-price-input="${r.id}" value="${price ?? ""}" />
           </label>
-          <button type="button" class="btn btn-ghost" data-price-reset="${r.id}">Default</button>
+          <button type="button" class="btn btn-ghost" data-price-reset="${r.id}">Reset</button>
         </article>`;
       })
       .join("");
@@ -910,7 +910,7 @@
       const id = reset.getAttribute("data-price-reset");
       Prices.clearRoom(id);
       renderPriceList();
-      toast("Price reset to default");
+      toast("Rate reset to default.");
     });
 
     document.getElementById("priceSaveAll")?.addEventListener("click", () => {
@@ -920,14 +920,14 @@
       });
       Prices.setMany(map);
       renderPriceList();
-      toast("Prices saved — website shows updated rates");
+      toast("Rates saved.");
     });
 
     document.getElementById("priceResetAll")?.addEventListener("click", () => {
-      if (!confirm("Reset all room prices to defaults from rooms-config?")) return;
+      if (!confirm("Reset all room rates to the default amounts?")) return;
       Prices.clearAll();
       renderPriceList();
-      toast("All prices reset to defaults");
+      toast("All rates reset to defaults.");
     });
 
     window.addEventListener("alma:room-prices-updated", renderPriceList);
@@ -973,13 +973,13 @@
       const id = select.value;
       window.AlmaRoomPhotos.setOverrides(id, photoDraft.slice());
       loadPhotoEditor();
-      toast("Room photos saved — guests see them on the room card");
+      toast("Room photos saved.");
     });
     document.getElementById("photoReset")?.addEventListener("click", () => {
       const id = select.value;
       window.AlmaRoomPhotos.clearRoom(id);
       loadPhotoEditor();
-      toast("Reset to default photos");
+      toast("Photos reset to defaults.");
     });
 
     document.getElementById("photoSelected")?.addEventListener("click", (e) => {
@@ -1018,7 +1018,7 @@
       }
       renderPhotoUI();
       e.target.value = "";
-      toast("Image added — click Save photos to keep it");
+      toast("Image added. Click Save photos to keep it.");
     });
 
     loadPhotoEditor();
@@ -1042,10 +1042,25 @@
     const hint = document.getElementById("photoDefaultsHint");
     if (hint) {
       hint.textContent = over.length
-        ? "Showing custom photos saved in Admin."
-        : "Showing default room photos. Change the selection and Save to override.";
+        ? "Using custom photos saved in Admin."
+        : "Using default room photos. Change the selection and save to override.";
     }
     renderPhotoUI();
+  }
+
+  function friendlyPhotoLabel(src, i) {
+    if (!src) return `Photo ${i + 1}`;
+    if (src.startsWith("data:")) return `Upload ${i + 1}`;
+    const name = (src.split("/").pop() || "").replace(/\.[^.]+$/, "");
+    // Prefer short readable labels without raw file extensions
+    if (/couple/i.test(name)) return "Couple room";
+    if (/family.*4|4pax|5 pax/i.test(name)) return "Family room";
+    if (/family.*6|6pax|7 pax/i.test(name)) return "Family room";
+    if (/big|15pax|15 pax/i.test(name)) return "Big room";
+    if (/kubo/i.test(name)) return "Kubo room";
+    if (/exterior/i.test(name)) return "Exterior";
+    if (/homepage|gallery/i.test(name)) return "Resort";
+    return `Photo ${i + 1}`;
   }
 
   function renderPhotoUI() {
@@ -1053,11 +1068,11 @@
     const library = document.getElementById("photoLibrary");
     if (selected) {
       if (!photoDraft.length) {
-        selected.innerHTML = '<p class="lp-note">No photos selected yet. Click images below to add.</p>';
+        selected.innerHTML = '<p class="lp-note">No photos selected. Choose images from the library below.</p>';
       } else {
         selected.innerHTML = photoDraft
           .map((src, i) => {
-            const label = src.startsWith("data:") ? `Upload ${i + 1}` : src.split("/").pop() || "Photo";
+            const label = friendlyPhotoLabel(src, i);
             return `
             <figure class="admin-photo-card is-selected">
               <img src="${imgSrcAdmin(src)}" alt="${escapeHtmlAdmin(label)}" loading="lazy" onerror="this.closest('figure').classList.add('is-broken')" />
@@ -1070,11 +1085,11 @@
     }
 
     if (library) {
-      library.innerHTML = PHOTO_LIBRARY.map((src) => {
-        const label = src.split("/").pop() || src;
+      library.innerHTML = PHOTO_LIBRARY.map((src, i) => {
+        const label = friendlyPhotoLabel(src, i);
         const active = photoDraft.includes(src) ? "is-in-list" : "";
         return `
-          <button type="button" class="admin-photo-card admin-photo-pick ${active}" data-photo-add="${escapeHtmlAdmin(src)}" title="Add ${escapeHtmlAdmin(label)}">
+          <button type="button" class="admin-photo-card admin-photo-pick ${active}" data-photo-add="${escapeHtmlAdmin(src)}" title="Add photo">
             <img src="${imgSrcAdmin(src)}" alt="${escapeHtmlAdmin(label)}" loading="lazy" onerror="this.closest('button').classList.add('is-broken')" />
             <figcaption>${escapeHtmlAdmin(label)}</figcaption>
           </button>`;
