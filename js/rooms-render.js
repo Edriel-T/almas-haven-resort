@@ -130,9 +130,15 @@
     const path = viewerImages[viewerIndex];
     const img = document.getElementById("roomViewerImg");
     img.src = imgSrc(path);
-    img.alt = viewerRoom || "Room photo";
-    document.getElementById("roomViewerCap").textContent =
-      path.split("/").pop() || "";
+    // Never show raw file names to guests — use room name only
+    const rooms = (window.ALMA_CONFIG && window.ALMA_CONFIG.rooms) || [];
+    const room = rooms.find((r) => r.id === viewerRoom);
+    img.alt = room ? room.name : "Room photo";
+    const cap = document.getElementById("roomViewerCap");
+    if (cap) {
+      cap.textContent = "";
+      cap.hidden = true;
+    }
     document.getElementById("roomViewerCount").textContent =
       `${viewerIndex + 1} / ${viewerImages.length}`;
 
@@ -158,6 +164,11 @@
     document.getElementById("roomViewerMeta").textContent = room
       ? `${room.floor} · ₱${room.price.toLocaleString("en-PH")} · up to ${room.pax} pax`
       : "";
+    const cap = document.getElementById("roomViewerCap");
+    if (cap) {
+      cap.textContent = "";
+      cap.hidden = true;
+    }
 
     const thumbs = document.getElementById("roomViewerThumbs");
     thumbs.innerHTML = viewerImages

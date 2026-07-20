@@ -1272,10 +1272,9 @@ p:last-child {
   background: var(--bg-2);
 }
 
+/* Hide file-name captions under room photos (public viewer) */
 .room-viewer__figure figcaption {
-  margin-top: 0.5rem;
-  font-size: var(--text-xs);
-  color: var(--muted);
+  display: none !important;
 }
 
 .room-viewer__nav {
