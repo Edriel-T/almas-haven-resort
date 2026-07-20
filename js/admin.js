@@ -501,6 +501,14 @@
     const tplBox = document.getElementById("liveChatTemplates");
     if (!Live || !box) return;
 
+    function setAcceptVisible(show) {
+      if (!acceptBtn) return;
+      acceptBtn.hidden = !show;
+      // Force hide even if something re-toggles attributes incorrectly
+      acceptBtn.style.display = show ? "" : "none";
+      acceptBtn.setAttribute("aria-hidden", show ? "false" : "true");
+    }
+
     if (!chatId) {
       head.textContent = "Select a conversation";
       if (needEl) {
@@ -509,6 +517,7 @@
       }
       box.innerHTML = "";
       form.hidden = true;
+      setAcceptVisible(false);
       if (tplBox) tplBox.hidden = true;
       return;
     }
@@ -518,27 +527,30 @@
       head.textContent = "Conversation not found";
       box.innerHTML = "";
       form.hidden = true;
+      setAcceptVisible(false);
       if (tplBox) tplBox.hidden = true;
       return;
     }
 
-    const statusLabel =
-      chat.status === "queued"
-        ? `Queue #${Live.queuePosition(chat.id)}`
-        : chat.status === "active"
-          ? "Active"
-          : chat.status;
+    const isQueued = chat.status === "queued";
+    const isActive = chat.status === "active";
+    const isClosed = chat.status === "closed";
+
+    const statusLabel = isQueued
+      ? `Queue #${Live.queuePosition(chat.id)}`
+      : isActive
+        ? "Active"
+        : chat.status;
     head.textContent = `${chat.guestName || "Guest"} · ${statusLabel}`;
     if (needEl) {
       needEl.hidden = !chat.need;
       needEl.textContent = chat.need ? `Need: ${chat.need}` : "";
     }
-    form.hidden = chat.status === "closed";
-    if (acceptBtn) {
-      acceptBtn.hidden = chat.status !== "queued";
-    }
+    form.hidden = isClosed;
+    // Accept only for queued guests — never when already active or closed
+    setAcceptVisible(isQueued);
     if (tplBox) {
-      tplBox.hidden = chat.status === "closed";
+      tplBox.hidden = isClosed;
     }
 
     box.innerHTML = (chat.messages || [])
