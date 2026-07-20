@@ -127,8 +127,8 @@
       answer: () =>
         [
           `We are in ${cfg().location || "Dasol, 2411 Pangasinan"}.`,
-          `Plus code: ${cfg().plusCode || "WQJJ+5M"}.`,
-          "Search “Alma's Haven Resort, Dasol” on Google Maps for directions.",
+          `Plus code: ${cfg().plusCode || "WQJJ+5J7, Dasol, 2411 Pangasinan"}.`,
+          `Google Maps: ${cfg().mapsUrl || "https://maps.app.goo.gl/XetSf2tzLtKGRE3X6"}`,
           "Need more help? Ask for a live agent and tell us where you are coming from.",
         ].join("\n"),
     },

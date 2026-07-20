@@ -110,7 +110,7 @@
     },
     {
       label: "Location",
-      text: "We are in Dasol, 2411 Pangasinan (Plus Code WQJJ+5M). You can open Google Maps and search Alma's Haven Resort, Dasol.",
+      text: "We are in Dasol, 2411 Pangasinan (Plus Code WQJJ+5J7). Open Maps: https://maps.app.goo.gl/XetSf2tzLtKGRE3X6",
     },
     {
       label: "Facebook backup",

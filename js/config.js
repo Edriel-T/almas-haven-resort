@@ -7,9 +7,9 @@
 window.ALMA_CONFIG = {
   resortName: "Alma's Haven Resort",
   location: "Dasol, 2411 Pangasinan",
-  plusCode: "WQJJ+5M Dasol, Pangasinan",
+  plusCode: "WQJJ+5J7, Dasol, 2411 Pangasinan",
   website: "https://almashaven.edrielcabansi.com",
-  mapsUrl: "https://www.google.com/maps/search/?api=1&query=WQJJ%2B5M+Dasol+Pangasinan",
+  mapsUrl: "https://maps.app.goo.gl/XetSf2tzLtKGRE3X6",
   rating: "4.9",
   reviewCount: 24,
 
