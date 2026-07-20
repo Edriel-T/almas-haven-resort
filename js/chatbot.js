@@ -272,6 +272,7 @@
   }
 
   function appendMessage(role, text, meta) {
+    hideTyping();
     const wrap = el("div", `msg ${role}`);
     if (meta) {
       const m = el("span", "msg-meta");
@@ -285,6 +286,43 @@
     messagesEl.appendChild(wrap);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     persistChat();
+  }
+
+  function showTyping(meta) {
+    if (!messagesEl) return;
+    hideTyping();
+    const wrap = el("div", "msg bot typing-msg");
+    wrap.id = "botTypingIndicator";
+    wrap.setAttribute("aria-live", "polite");
+    wrap.setAttribute("aria-label", "Bot is typing");
+    const m = el("span", "msg-meta");
+    m.textContent = meta || "Alma's Haven Bot";
+    wrap.appendChild(m);
+    const dots = el("div", "typing-dots");
+    dots.innerHTML = "<span></span><span></span><span></span>";
+    wrap.appendChild(dots);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function hideTyping() {
+    const node = document.getElementById("botTypingIndicator");
+    if (node) node.remove();
+  }
+
+  function typingDelayFor(text) {
+    const len = String(text || "").length;
+    // Longer answers take a bit more time; keep within a natural range
+    return Math.min(2400, Math.max(750, 500 + len * 14 + Math.random() * 350));
+  }
+
+  /** Show typing dots, wait, then post bot message */
+  async function botReply(text, meta) {
+    const label = meta || "Alma's Haven Bot";
+    showTyping(label);
+    await wait(typingDelayFor(text));
+    hideTyping();
+    appendMessage("bot", text, label);
   }
 
   function escapeHtml(str) {
@@ -406,6 +444,24 @@
   }
 
   function endLiveChatByUser() {
+    // Cancel during name/need setup (not yet connected)
+    if (mode === "ask_name" || mode === "ask_need") {
+      const ok = confirm("Cancel the live agent request?");
+      if (!ok) return;
+      liveChatId = null;
+      lastLiveMsgCount = 0;
+      stopLivePoll();
+      intakeName = "";
+      intakeNeed = "";
+      setMode("bot");
+      appendMessage(
+        "system",
+        "Live agent request cancelled. You can use the FAQ bot, or request a live agent again anytime."
+      );
+      if (window.AlmaUI?.toast) window.AlmaUI.toast("Request cancelled");
+      return;
+    }
+
     if (mode !== "live" && mode !== "queued") return;
     const ok = confirm(
       mode === "queued"
@@ -503,17 +559,17 @@
       setMode("live");
       appendMessage(
         "system",
-        `✓ ${intakeName}, you're connected. Agent: ${window.AlmaLiveAgent.getAgentName()}. They can see what you need.`
+        `✓ ${intakeName}, you're connected. Agent: ${window.AlmaLiveAgent.getAgentName()}. They can see what you need.\n\nYou can end this chat anytime with the red “End live chat” button above, or “End live agent chat” below.`
       );
       if (window.AlmaUI?.toast) {
-        window.AlmaUI.toast("Connected to live agent on the website");
+        window.AlmaUI.toast("Connected to live agent");
       }
     } else {
       setMode("queued");
       const pos = result.position || window.AlmaLiveAgent.queuePosition(liveChatId) || 1;
       appendMessage(
         "system",
-        `✓ Thanks ${intakeName}! You're #${pos} in the queue. Please wait — we'll connect you when an agent is free.`
+        `✓ Thanks ${intakeName}! You're #${pos} in the queue. Please wait — we'll connect you when an agent is free.\n\nYou can leave the queue anytime with “End live chat”.`
       );
       if (window.AlmaUI?.toast) {
         window.AlmaUI.toast(`You're #${pos} in the live agent queue`);
@@ -611,11 +667,8 @@
     if (mode === "ask_name") {
       intakeName = trimmed.replace(/\s+/g, " ").slice(0, 60);
       setMode("ask_need");
-      await wait(300);
-      appendMessage(
-        "bot",
-        `Thanks, ${intakeName}! What do you need help with? (e.g. booking dates, room type, directions)`,
-        "Alma's Haven Bot"
+      await botReply(
+        `Thanks, ${intakeName}! What do you need help with? (e.g. booking dates, room type, directions)`
       );
       return;
     }
@@ -632,7 +685,9 @@
         openAgentModal();
         return;
       }
-      await wait(250);
+      showTyping();
+      await wait(650 + Math.random() * 300);
+      hideTyping();
       finishIntakeAndConnect();
       return;
     }
@@ -646,7 +701,7 @@
       return;
     }
 
-    // Live website chat with active agent
+    // Live website chat with active agent (no bot typing — real agent replies)
     if (mode === "live" && liveChatId && window.AlmaLiveAgent) {
       if (!window.AlmaLiveAgent.isAgentOnline()) {
         appendMessage(
@@ -664,20 +719,19 @@
       return;
     }
 
-    // typing delay for natural feel
-    await wait(400 + Math.random() * 350);
-
+    // FAQ bot — typing indicator + natural delay
     const hit = matchFaq(trimmed);
     const answer = resolveAnswer(hit);
 
     if (answer === "__REQUEST_AGENT__") {
       if (agentOnline()) {
+        showTyping();
+        await wait(700 + Math.random() * 400);
+        hideTyping();
         beginLiveIntake();
       } else {
-        appendMessage(
-          "bot",
-          "No live agent is online at the moment. Leave a short note and we'll open Facebook so you can message the resort page.",
-          "Alma's Haven Bot"
+        await botReply(
+          "No live agent is online at the moment. Leave a short note and we'll open Facebook so you can message the resort page."
         );
         openAgentModal("reservation");
       }
@@ -685,16 +739,14 @@
     }
 
     if (answer) {
-      appendMessage("bot", answer, "Alma's Haven Bot");
+      await botReply(answer);
       return;
     }
 
-    appendMessage(
-      "bot",
+    await botReply(
       agentOnline()
         ? "I'm not sure about that yet. Try a suggested question, or tap Live agent — we'll ask your name, then what you need, then connect you."
-        : "I'm not sure about that yet. Try a suggested question, or tap Live agent to message us on Facebook (no agent is online right now).",
-      "Alma's Haven Bot"
+        : "I'm not sure about that yet. Try a suggested question, or tap Live agent to message us on Facebook (no agent is online right now)."
     );
   }
 
@@ -798,6 +850,8 @@
     modeLabel = document.getElementById("modeLabel");
     badgeEl = document.getElementById("chatBadge");
     endLiveBtn = document.getElementById("endLiveChatBtn");
+    endLiveBtnFooter = document.getElementById("endLiveChatBtnFooter");
+    liveEndBar = document.getElementById("chatLiveEndBar");
     requestAgentBtn = document.getElementById("requestAgentBtn");
 
     if (!panel) return;
@@ -841,6 +895,9 @@
     });
 
     endLiveBtn?.addEventListener("click", () => {
+      endLiveChatByUser();
+    });
+    endLiveBtnFooter?.addEventListener("click", () => {
       endLiveChatByUser();
     });
 
