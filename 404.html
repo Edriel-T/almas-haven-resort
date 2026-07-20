@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page not found | Alma's Haven Resort</title>
+  <meta name="description" content="This page does not exist on Alma's Haven Resort. Return home to view rooms, gallery, and booking info." />
+  <meta name="robots" content="noindex, follow" />
+  <meta name="theme-color" content="#0c6572" />
+  <!-- Absolute paths so assets load from any missing URL depth (GitHub Pages 404) -->
+  <link rel="canonical" href="https://almashaven.edrielcabansi.com/404.html" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>" />
+</head>
+<body class="page-404 beach-theme">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="header">
+    <div class="container header-inner">
+      <a href="/index.html" class="logo">
+        <span class="logo-mark">AH</span>
+        <span class="logo-text">
+          <strong>Alma's Haven</strong>
+          <small>Dasol</small>
+        </span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="/index.html">Home</a>
+        <a href="/rooms.html">Rooms</a>
+        <a href="/gallery.html">Gallery</a>
+        <a href="/faq.html">FAQ</a>
+        <a href="/index.html#availability">Dates</a>
+        <a href="/about.html">About</a>
+        <a href="https://web.facebook.com/profile.php?id=100057130492638" class="nav-cta" target="_blank" rel="noopener">Book on FB</a>
+      </nav>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="error-page" aria-labelledby="error-title">
+      <div class="container error-page-inner">
+        <p class="lp-kicker">Error 404</p>
+        <p class="error-page-code" aria-hidden="true">404</p>
+        <h1 id="error-title">This page could not be found</h1>
+        <p class="section-lead">
+          The link may be broken, or the page may have been moved.
+          Head back home or pick a destination below.
+        </p>
+        <p class="error-page-path" id="errorPath" hidden></p>
+        <div class="error-page-actions">
+          <a class="btn btn-primary" href="/index.html">Back to home</a>
+          <a class="btn btn-outline" href="/rooms.html">View rooms</a>
+          <a class="btn btn-outline" href="/gallery.html">Gallery</a>
+          <a class="btn btn-outline" href="https://web.facebook.com/profile.php?id=100057130492638" target="_blank" rel="noopener">Book on Facebook</a>
+        </div>
+        <ul class="error-page-links">
+          <li><a href="/faq.html">FAQ</a></li>
+          <li><a href="/about.html">About</a></li>
+          <li><a href="/location.html">Location</a></li>
+          <li><a href="/reviews.html">Reviews</a></li>
+          <li><a href="/index.html#availability">Check dates</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong class="footer-name">Alma's Haven Resort</strong>
+        <p class="footer-tag">Dasol, Pangasinan · Beachfront</p>
+      </div>
+      <div class="footer-links">
+        <a href="/index.html">Home</a>
+        <a href="/rooms.html">Rooms</a>
+        <a href="/gallery.html">Gallery</a>
+        <a href="/faq.html">FAQ</a>
+      </div>
+      <p class="copyright">© <span id="year"></span> Alma's Haven Resort</p>
+    </div>
+  </footer>
+
+  <script src="/js/site.js"></script>
+  <script>
+    (function () {
+      var el = document.getElementById("errorPath");
+      if (!el) return;
+      var path = location.pathname || "";
+      if (path && path !== "/404.html" && path !== "/404") {
+        el.hidden = false;
+        el.textContent = "Requested: " + path;
+      }
+    })();
+  </script>
+</body>
+</html>
