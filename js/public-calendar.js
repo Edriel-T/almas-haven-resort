@@ -82,14 +82,14 @@
         }
         const typeStatus =
           r.free === r.total
-            ? "all free"
+            ? "Available"
             : r.free === 0
-              ? "fully booked"
-              : `${r.free} of ${r.total} free`;
+              ? "Fully booked"
+              : `${r.free} of ${r.total} available`;
         html += `<div class="public-type-block">
           <div class="public-type-head">
             <strong>${r.name}</strong>
-            <span class="public-type-meta">${typeStatus} · up to ${r.pax} pax · ₱${Number(r.price || 0).toLocaleString("en-PH")}</span>
+            <span class="public-type-meta">${typeStatus} · ${r.pax} pax · ₱${Number(r.price || 0).toLocaleString("en-PH")}</span>
           </div>
           <ul class="public-unit-status">`;
         r.units.forEach((u) => {
