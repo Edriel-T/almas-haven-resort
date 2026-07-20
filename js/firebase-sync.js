@@ -178,20 +178,22 @@
 
   /**
    * Admin only — sign in so Firestore write rules allow updates.
+   * Pass email/password from the admin login form (never store secrets in the repo).
    */
-  async function signInAdmin() {
+  async function signInAdmin(email, password) {
     await init();
     if (!ready || !auth) throw new Error("Firebase is not connected");
-    const c = firebaseCfg();
-    if (!c.adminEmail || !c.adminPassword) {
-      throw new Error("Add firebase.adminEmail and firebase.adminPassword in js/config.js");
+    const mail = String(email || "").trim();
+    const pass = String(password || "");
+    if (!mail || !pass) {
+      throw new Error("Enter your Firebase admin email and password");
     }
-    if (auth.currentUser && auth.currentUser.email === c.adminEmail) {
+    if (auth.currentUser && auth.currentUser.email === mail) {
       writeReady = true;
       emitStatus();
       return auth.currentUser;
     }
-    const cred = await auth.signInWithEmailAndPassword(c.adminEmail, c.adminPassword);
+    const cred = await auth.signInWithEmailAndPassword(mail, pass);
     writeReady = true;
     emitStatus();
     return cred.user;
@@ -247,7 +249,9 @@
 
   /** One-time upload of current local data after first admin cloud login */
   async function uploadLocalToCloud() {
-    await signInAdmin();
+    if (!auth || !auth.currentUser) {
+      throw new Error("Sign in as admin first");
+    }
     const results = {};
     try {
       const stays = localStorage.getItem("almas_haven_stays_v1");

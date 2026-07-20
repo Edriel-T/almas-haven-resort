@@ -19,14 +19,20 @@
     <div class="admin-login-card">
       <p class="lp-kicker">Private</p>
       <h1>Admin access</h1>
-      <p class="section-lead">Enter the password to manage availability, prices, photos, and live chat.</p>
+      <p class="section-lead" id="adminLoginLead">
+        Sign in with your Firebase admin account to manage the site. Credentials are not stored in the website code.
+      </p>
       <form id="adminLoginForm">
+        <label id="adminEmailLabel">
+          Admin email
+          <input type="email" id="adminEmailInput" name="email" autocomplete="username" placeholder="you@example.com" />
+        </label>
         <label>
           Password
           <input type="password" id="adminPasswordInput" name="password" required autocomplete="current-password" placeholder="••••••••" />
         </label>
-        <p class="form-note error" id="adminLoginError" hidden>Incorrect password.</p>
-        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+        <p class="form-note error" id="adminLoginError" hidden>Incorrect email or password.</p>
+        <button type="submit" class="btn btn-primary btn-block" id="adminLoginSubmit">Sign in</button>
       </form>
       <p class="lp-note" style="margin-top:1rem">
         <a href="index.html">← Back to website</a>

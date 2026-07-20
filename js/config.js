@@ -25,33 +25,25 @@ window.ALMA_CONFIG = {
   facebookMessengerUrl: "",
 
   /**
-   * Admin panel password (admin.html).
-   * Change this value — session lasts until browser tab is closed / log out.
-   * Note: client-side only; for stronger security use a real backend later.
+   * Local-only admin password (used only if Firebase is not configured).
+   * Production uses Firebase Email/Password on the admin login form — never commit Auth passwords.
    */
   adminPassword: "almasadmin",
 
   /**
-   * Firebase cloud sync (availability, prices, photos, notes across all devices).
-   * Setup guide: FIREBASE.md
-   *
-   * 1. Create a Firebase project → enable Firestore + Email/Password Auth
-   * 2. Create one Auth user (admin email/password)
-   * 3. Paste web app config below
-   * 4. Set Firestore rules from FIREBASE.md (public read, auth write)
-   *
-   * Leave apiKey empty to use this browser only (localStorage).
+   * Firebase (production) — public web config only.
+   * Safe to ship: restrict the key in Google Cloud Console to your domains.
+   * Admin Auth email/password are entered on admin.html and never stored in this file.
+   * Rules + Auth setup: FIREBASE.md
    */
   firebase: {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: "",
-    /** Firebase Authentication user (for admin writes only) */
-    adminEmail: "",
-    adminPassword: "",
+    apiKey: "***REMOVED***",
+    authDomain: "almas-haven-c1998.firebaseapp.com",
+    projectId: "almas-haven-c1998",
+    storageBucket: "almas-haven-c1998.firebasestorage.app",
+    messagingSenderId: "497402113275",
+    appId: "1:497402113275:web:c2174f8ab5538fe14b145e",
+    measurementId: "G-SL3HR1MTKT",
   },
 
   /** Homepage hero photos */

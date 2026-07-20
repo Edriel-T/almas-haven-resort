@@ -9,6 +9,10 @@ Desktop.ini
 *.swp
 *~
 
-# Local env / secrets (if added later)
+# Local env / secrets — never commit
 .env
 .env.*
+js/firebase-secrets.js
+js/firebase-secrets.local.js
+**/serviceAccount*.json
+*-firebase-adminsdk-*.json

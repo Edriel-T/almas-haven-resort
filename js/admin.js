@@ -42,20 +42,85 @@
     if (app) app.hidden = !show;
   }
 
-  /* ---- Login ---- */
-  document.getElementById("adminLoginForm")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const input = document.getElementById("adminPasswordInput");
-    const err = document.getElementById("adminLoginError");
-    if (input.value === expectedPassword()) {
-      setLoggedIn(true);
-      err.hidden = true;
-      showApp(true);
-      initAdminApp();
-      toast("Signed in");
+  function cloudEnabled() {
+    return window.AlmaCloud && window.AlmaCloud.isConfigured();
+  }
+
+  function setupLoginFormMode() {
+    const lead = document.getElementById("adminLoginLead");
+    const emailLabel = document.getElementById("adminEmailLabel");
+    const emailInput = document.getElementById("adminEmailInput");
+    if (cloudEnabled()) {
+      if (lead) {
+        lead.textContent =
+          "Sign in with your Firebase admin email and password. Changes sync to every device. Credentials stay on this session only — not in the website code.";
+      }
+      if (emailLabel) emailLabel.hidden = false;
+      if (emailInput) {
+        emailInput.required = true;
+        emailInput.hidden = false;
+      }
     } else {
+      if (lead) {
+        lead.textContent =
+          "Cloud is not configured. Enter the local admin password (this browser only).";
+      }
+      if (emailLabel) emailLabel.hidden = true;
+      if (emailInput) {
+        emailInput.required = false;
+        emailInput.hidden = true;
+      }
+    }
+  }
+
+  /* ---- Login ---- */
+  document.getElementById("adminLoginForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const emailInput = document.getElementById("adminEmailInput");
+    const passInput = document.getElementById("adminPasswordInput");
+    const err = document.getElementById("adminLoginError");
+    const submitBtn = document.getElementById("adminLoginSubmit");
+    err.hidden = true;
+    err.textContent = "Incorrect email or password.";
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Signing in…";
+    }
+
+    try {
+      if (cloudEnabled()) {
+        await window.AlmaCloud.signInAdmin(emailInput.value, passInput.value);
+        setLoggedIn(true);
+        showApp(true);
+        initAdminApp();
+        toast("Signed in · cloud sync on");
+        try {
+          await window.AlmaCloud.uploadLocalToCloud();
+        } catch {
+          /* optional first push */
+        }
+      } else if (passInput.value === expectedPassword()) {
+        setLoggedIn(true);
+        showApp(true);
+        initAdminApp();
+        toast("Signed in (local only)");
+      } else {
+        err.hidden = false;
+        passInput.focus();
+      }
+    } catch (ex) {
+      console.error(ex);
+      err.textContent = ex.message || "Sign-in failed. Check email, password, and Firebase Auth.";
       err.hidden = false;
-      input.focus();
+      passInput.focus();
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign in";
+      }
+      // Do not keep password in the form after attempt
+      if (passInput) passInput.value = "";
     }
   });
 
@@ -70,7 +135,10 @@
     }
     setLoggedIn(false);
     showApp(false);
-    document.getElementById("adminPasswordInput").value = "";
+    const passInput = document.getElementById("adminPasswordInput");
+    const emailInput = document.getElementById("adminEmailInput");
+    if (passInput) passInput.value = "";
+    if (emailInput) emailInput.value = "";
     toast("Logged out");
   });
 
@@ -86,7 +154,7 @@
     initPrices();
     initPhotos();
     initInbox();
-    connectFirebaseAdmin();
+    updateCloudBadge();
   }
 
   function updateCloudBadge(detail) {
@@ -97,7 +165,7 @@
     if (!s.configured) {
       el.textContent = "Cloud: off (local only)";
       el.classList.add("is-off");
-      el.title = "Add Firebase settings in js/config.js — see FIREBASE.md";
+      el.title = "Firebase public config missing";
     } else if (s.writeReady) {
       el.textContent = "Cloud: synced";
       el.classList.add("is-ok");
@@ -105,7 +173,7 @@
     } else if (s.ready) {
       el.textContent = "Cloud: read only";
       el.classList.add("is-warn");
-      el.title = "Connected for read. Sign-in for admin still pending…";
+      el.title = "Connected for read. Sign in again to write.";
     } else {
       el.textContent = "Cloud: connecting…";
       el.classList.add("is-warn");
@@ -116,27 +184,6 @@
   function initCloudBadge() {
     updateCloudBadge();
     window.addEventListener("alma:cloud-status", (e) => updateCloudBadge(e.detail));
-  }
-
-  async function connectFirebaseAdmin() {
-    if (!window.AlmaCloud || !window.AlmaCloud.isConfigured()) {
-      updateCloudBadge();
-      return;
-    }
-    try {
-      await window.AlmaCloud.signInAdmin();
-      toast("Cloud sync on — changes update all devices");
-      // First-time: push any local stays already on this browser
-      try {
-        await window.AlmaCloud.uploadLocalToCloud();
-      } catch {
-        /* ignore upload errors */
-      }
-    } catch (err) {
-      console.error(err);
-      toast(err.message || "Cloud sign-in failed — check FIREBASE.md");
-      updateCloudBadge();
-    }
   }
 
   /* ---- Live agent desk ---- */
@@ -1052,10 +1099,24 @@
     renderInbox();
   }
 
-  if (isLoggedIn()) {
-    showApp(true);
-    initAdminApp();
+  // Wait briefly for Firebase SDK + AlmaCloud init before choosing login mode
+  function bootAdmin() {
+    setupLoginFormMode();
+    if (isLoggedIn() && cloudEnabled()) {
+      // Session flag alone is not enough for writes — require fresh cloud login
+      setLoggedIn(false);
+      showApp(false);
+    } else if (isLoggedIn() && !cloudEnabled()) {
+      showApp(true);
+      initAdminApp();
+    } else {
+      showApp(false);
+    }
+  }
+
+  if (window.AlmaCloud) {
+    window.AlmaCloud.init().finally(bootAdmin);
   } else {
-    showApp(false);
+    bootAdmin();
   }
 })();
