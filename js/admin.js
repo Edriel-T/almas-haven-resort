@@ -1206,40 +1206,66 @@
 
       list.innerHTML = items
         .map((item) => {
-          const details = [
-            item.firstName || item.lastName
-              ? `<strong>Name:</strong> ${escapeHtml(
-                  [item.firstName, item.lastName].filter(Boolean).join(" ") || item.name || "Guest"
-                )}`
-              : "",
-            item.email || item.contact
-              ? `<strong>Email:</strong> ${escapeHtml(item.email || item.contact)}`
-              : "",
-            item.contact && item.contact !== item.email
-              ? `<strong>Contact:</strong> ${escapeHtml(item.contact)}`
-              : "",
-            item.roomType ? `<strong>Room:</strong> ${escapeHtml(roomLabel(item.roomType))}` : "",
+          const nameLine =
+            [item.firstName, item.lastName].filter(Boolean).join(" ") ||
+            item.name ||
+            "Guest";
+          const email = item.email || item.contact || "";
+          const preview = String(item.message || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 100);
+          const hasBody = Boolean(item.message && String(item.message).trim());
+          const metaBits = [
+            email ? escapeHtml(email) : "",
+            item.roomType ? escapeHtml(roomLabel(item.roomType)) : "",
             item.checkin
-              ? `<strong>Stay:</strong> ${escapeHtml(item.checkin)} → ${escapeHtml(item.checkout || "?")}`
+              ? `${escapeHtml(item.checkin)} → ${escapeHtml(item.checkout || "?")}`
               : "",
           ]
             .filter(Boolean)
-            .join("<br/>");
+            .join(" · ");
           return `
-          <article class="inbox-item ${item.read ? "" : "unread"}">
-            <header>
-              <div>
+          <article class="inbox-item ${item.read ? "" : "unread"}" data-inbox-id="${escapeHtml(item.id)}">
+            <header class="inbox-item-head">
+              <div class="inbox-item-title">
                 <span class="type-pill ${item.type}">${typeLabel(item.type)}</span>
-                <strong style="margin-left:0.5rem">${escapeHtml(item.name || "Guest")}</strong>
+                <strong>${escapeHtml(nameLine)}</strong>
               </div>
               <span class="inbox-meta">${formatWhen(item.createdAt)}</span>
             </header>
-            <div class="inbox-meta">${details}</div>
-            <p class="inbox-message">${escapeHtml(item.message || "")}</p>
+            ${metaBits ? `<p class="inbox-meta-line">${metaBits}</p>` : ""}
             ${
-              item.read
-                ? ""
-                : `<button type="button" class="btn btn-ghost" data-read="${item.id}">Mark read</button>`
+              preview
+                ? `<p class="inbox-preview">${escapeHtml(preview)}${
+                    String(item.message || "").length > 100 ? "…" : ""
+                  }</p>`
+                : ""
+            }
+            <div class="inbox-item-actions">
+              ${
+                hasBody
+                  ? `<button type="button" class="btn btn-ghost btn-sm" data-toggle-transcript="${escapeHtml(
+                      item.id
+                    )}">View details</button>`
+                  : ""
+              }
+              ${
+                item.read
+                  ? ""
+                  : `<button type="button" class="btn btn-ghost btn-sm" data-read="${escapeHtml(
+                      item.id
+                    )}">Mark read</button>`
+              }
+            </div>
+            ${
+              hasBody
+                ? `<div class="inbox-details" id="inbox-details-${escapeHtml(
+                    item.id
+                  )}" hidden>
+              <pre class="inbox-transcript">${escapeHtml(item.message)}</pre>
+            </div>`
+                : ""
             }
           </article>`;
         })
@@ -1247,10 +1273,30 @@
     }
 
     list.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-read]");
-      if (btn) {
-        window.AlmaNotify.markRead(btn.getAttribute("data-read"));
+      const readBtn = e.target.closest("[data-read]");
+      if (readBtn) {
+        window.AlmaNotify.markRead(readBtn.getAttribute("data-read"));
         renderInbox();
+        return;
+      }
+      const toggleBtn = e.target.closest("[data-toggle-transcript]");
+      if (toggleBtn) {
+        const id = toggleBtn.getAttribute("data-toggle-transcript");
+        const panel = document.getElementById(`inbox-details-${id}`);
+        if (!panel) return;
+        const open = panel.hidden;
+        panel.hidden = !open;
+        toggleBtn.textContent = open ? "Hide details" : "View details";
+        if (open && window.AlmaNotify) {
+          window.AlmaNotify.markRead(id);
+          // soft refresh unread badge without collapsing
+          const unread = window.AlmaNotify.loadInbox().filter((i) => !i.read).length;
+          const tabUnread = document.getElementById("tabUnread");
+          if (tabUnread) tabUnread.textContent = unread ? `(${unread})` : "";
+          document.getElementById("statUnread").textContent = String(unread);
+          const article = list.querySelector(`[data-inbox-id="${id}"]`);
+          if (article) article.classList.remove("unread");
+        }
       }
     });
 

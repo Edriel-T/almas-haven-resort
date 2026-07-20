@@ -13,6 +13,9 @@
   const CHANNEL = "almas-haven-live-agent";
   const HEARTBEAT_MS = 12000;
   const ONLINE_TTL_MS = 35000;
+  /** Close open chats if the guest sends no message for this long */
+  const GUEST_IDLE_MS = 10 * 60 * 1000;
+  const IDLE_CHECK_MS = 30 * 1000;
   const FS_PRESENCE = "livePresence";
   const FS_CHATS = "liveChats";
 
@@ -503,6 +506,7 @@
           text: needText,
           at: Date.now(),
         });
+        chat.lastGuestActivityAt = Date.now();
       }
       chat.updatedAt = Date.now();
       chats[id] = chat;
@@ -527,6 +531,7 @@
       createdAt: now,
       queuedAt: now,
       updatedAt: now,
+      lastGuestActivityAt: now,
       messages: [],
     };
 
@@ -584,6 +589,9 @@
     chat.messages = chat.messages || [];
     chat.messages.push(msg);
     chat.updatedAt = Date.now();
+    if (from === "guest") {
+      chat.lastGuestActivityAt = Date.now();
+    }
     chats[chatId] = chat;
     saveChats(chats);
     return chat;
@@ -613,34 +621,81 @@
       [chat.firstName, chat.lastName].filter(Boolean).join(" ") ||
       chat.guestName ||
       "Guest";
+    const endedBy =
+      who === "guest" ? "Guest" : who === "timeout" ? "Inactivity (10 min)" : "Agent";
     const lines = [
       "— Live chat ended —",
-      `Ended by: ${who === "guest" ? "Guest" : "Agent"}`,
-      `Guest name: ${fullName}`,
-      chat.firstName ? `First name: ${chat.firstName}` : null,
-      chat.lastName ? `Last name: ${chat.lastName}` : null,
+      `Ended by: ${endedBy}`,
+      `Guest: ${fullName}`,
       chat.email || chat.guestContact
         ? `Email: ${chat.email || chat.guestContact}`
         : null,
-      chat.need ? `What they needed: ${chat.need}` : null,
-      chat.topic ? `Topic: ${chat.topic}` : null,
-      `Chat ID: ${chat.id}`,
+      chat.need ? `Request: ${chat.need}` : null,
       "",
       "Transcript:",
     ].filter((x) => x !== null);
 
     (chat.messages || []).forEach((m) => {
-      const from =
-        m.from === "guest" ? "Guest" : m.from === "agent" ? "Agent" : "System";
+      if (m.from === "system") return; // keep inbox shorter
+      const from = m.from === "guest" ? "Guest" : m.from === "agent" ? "Agent" : "System";
       const time = m.at
         ? new Date(m.at).toLocaleString(undefined, {
-            dateStyle: "short",
-            timeStyle: "short",
+            hour: "2-digit",
+            minute: "2-digit",
           })
         : "";
-      lines.push(`[${time}] ${from}: ${m.text}`);
+      const text = String(m.text || "").slice(0, 280);
+      lines.push(`${time} ${from}: ${text}`);
     });
     return lines.join("\n");
+  }
+
+  function guestActivityAt(chat) {
+    if (!chat) return 0;
+    if (chat.lastGuestActivityAt) return chat.lastGuestActivityAt;
+    const guestMsgs = (chat.messages || []).filter((m) => m.from === "guest");
+    if (guestMsgs.length) {
+      return guestMsgs[guestMsgs.length - 1].at || chat.createdAt || 0;
+    }
+    return chat.createdAt || chat.queuedAt || 0;
+  }
+
+  /** Auto-close open chats when guest has been idle too long */
+  function closeInactiveGuestChats() {
+    const chats = loadChats();
+    let changed = false;
+    const now = Date.now();
+    Object.values(chats).forEach((chat) => {
+      if (!chat || (chat.status !== "active" && chat.status !== "queued")) return;
+      const last = guestActivityAt(chat);
+      if (!last || now - last < GUEST_IDLE_MS) return;
+      chat.status = "closed";
+      chat.updatedAt = now;
+      chat.closedReason = "timeout";
+      chat.messages = chat.messages || [];
+      chat.messages.push({
+        id: uid("m"),
+        from: "system",
+        text: "Live chat closed automatically after 10 minutes of guest inactivity.",
+        at: now,
+      });
+      chats[chat.id] = chat;
+      changed = true;
+      saveChatToInbox(chat, "timeout");
+    });
+    if (changed) {
+      saveChats(chats);
+      promoteNextInQueue();
+    }
+  }
+
+  let idleWatchStarted = false;
+  function startIdleWatch() {
+    if (idleWatchStarted) return;
+    idleWatchStarted = true;
+    setInterval(closeInactiveGuestChats, IDLE_CHECK_MS);
+    // First check shortly after load
+    setTimeout(closeInactiveGuestChats, 5000);
   }
 
   function saveChatToInbox(chat, who) {
@@ -682,17 +737,21 @@
     const chats = loadChats();
     if (!chats[chatId]) return;
     if (chats[chatId].status === "closed") return;
-    const who = by === "guest" ? "guest" : "agent";
+    const who = by === "guest" ? "guest" : by === "timeout" ? "timeout" : "agent";
     chats[chatId].status = "closed";
     chats[chatId].updatedAt = Date.now();
+    chats[chatId].closedReason = who;
     chats[chatId].messages = chats[chatId].messages || [];
+    const endText =
+      who === "guest"
+        ? "Live chat ended by the guest."
+        : who === "timeout"
+          ? "Live chat closed automatically after 10 minutes of guest inactivity."
+          : "Live chat ended by the agent.";
     chats[chatId].messages.push({
       id: uid("m"),
       from: "system",
-      text:
-        who === "guest"
-          ? "Live chat ended by the guest."
-          : "Live chat ended by the agent.",
+      text: endText,
       at: Date.now(),
     });
     const closed = chats[chatId];
@@ -768,9 +827,13 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootCloud);
+    document.addEventListener("DOMContentLoaded", () => {
+      bootCloud();
+      startIdleWatch();
+    });
   } else {
     bootCloud();
+    startIdleWatch();
   }
   // Also retry after window load (firebase-config may inject late on some hosts)
   window.addEventListener("load", () => {
@@ -781,6 +844,7 @@
     CHANNEL,
     HEARTBEAT_MS,
     ONLINE_TTL_MS,
+    GUEST_IDLE_MS,
     AGENT_TEMPLATES,
     getTemplateText,
     buildRatesText,
