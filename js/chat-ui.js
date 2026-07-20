@@ -26,11 +26,16 @@
       <span id="modeLabel">Mode: FAQ Bot</span>
       <div class="chat-mode-actions">
         <button type="button" class="chip-btn" id="requestAgentBtn">Live agent</button>
-        <button type="button" class="chip-btn chip-btn-danger" id="endLiveChatBtn" hidden>End chat</button>
+        <button type="button" class="chip-btn chip-btn-danger" id="endLiveChatBtn" hidden>End live chat</button>
       </div>
     </div>
     <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
     <div class="chat-suggestions" id="chatSuggestions"></div>
+    <div class="chat-live-end-bar" id="chatLiveEndBar" hidden>
+      <button type="button" class="btn btn-ghost btn-block chat-end-live-btn" id="endLiveChatBtnFooter">
+        End live agent chat
+      </button>
+    </div>
     <form class="chat-input-row" id="chatForm">
       <label class="sr-only" for="chatInput">Type your message</label>
       <input type="text" id="chatInput" placeholder="Ask about rates, rooms, directions…" autocomplete="off" />

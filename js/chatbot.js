@@ -246,7 +246,18 @@
   ];
 
   let mode = "bot"; // bot | ask_name | ask_need | queued | live | offline_fb
-  let panel, messagesEl, suggestionsEl, inputEl, formEl, statusEl, modeLabel, badgeEl, endLiveBtn, requestAgentBtn;
+  let panel,
+    messagesEl,
+    suggestionsEl,
+    inputEl,
+    formEl,
+    statusEl,
+    modeLabel,
+    badgeEl,
+    endLiveBtn,
+    endLiveBtnFooter,
+    liveEndBar,
+    requestAgentBtn;
   let liveChatId = null;
   let livePollTimer = null;
   let lastLiveMsgCount = 0;
@@ -341,8 +352,19 @@
 
   function updateLiveButtons() {
     const inLive = mode === "live" || mode === "queued";
-    if (endLiveBtn) endLiveBtn.hidden = !inLive;
-    if (requestAgentBtn) requestAgentBtn.hidden = inLive || mode === "ask_name" || mode === "ask_need";
+    const inSetup = mode === "ask_name" || mode === "ask_need";
+    const showEnd = inLive || inSetup;
+    if (endLiveBtn) {
+      endLiveBtn.hidden = !showEnd;
+      endLiveBtn.textContent = inSetup ? "Cancel" : "End live chat";
+    }
+    if (endLiveBtnFooter) {
+      endLiveBtnFooter.textContent = inSetup
+        ? "Cancel live agent request"
+        : "End live agent chat";
+    }
+    if (liveEndBar) liveEndBar.hidden = !showEnd;
+    if (requestAgentBtn) requestAgentBtn.hidden = showEnd;
   }
 
   function setMode(next) {
