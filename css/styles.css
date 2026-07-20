@@ -960,6 +960,7 @@ p:last-child {
 }
 
 .dot-green,
+.dot-amber,
 .dot-red {
   display: inline-block;
   width: 0.65em;
@@ -971,6 +972,10 @@ p:last-child {
 
 .dot-green {
   background: var(--green);
+}
+
+.dot-amber {
+  background: #e6c06a;
 }
 
 .dot-red {

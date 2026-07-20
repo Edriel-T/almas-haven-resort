@@ -32,20 +32,20 @@
       <div class="public-cal-card">
         <div class="public-cal-toolbar">
           <div class="admin-cal-nav public-cal-nav">
-            <button type="button" class="btn btn-ghost btn-sm" id="publicCalPrev">‹</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="publicCalPrev" aria-label="Previous month">‹</button>
             <strong id="publicCalLabel"></strong>
-            <button type="button" class="btn btn-ghost btn-sm" id="publicCalNext">›</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="publicCalNext" aria-label="Next month">›</button>
           </div>
         </div>
         <div class="cal-legend">
-          <span><i class="leg available"></i> All free</span>
-          <span><i class="leg partial"></i> Some free</span>
+          <span><i class="leg available"></i> Available</span>
+          <span><i class="leg partial"></i> Limited availability</span>
           <span><i class="leg unavailable"></i> Fully booked</span>
         </div>
         <div class="cal-grid public-cal-grid" id="publicCalGrid"></div>
         <div class="public-day-detail" id="publicDayDetail">
           <p class="cal-hint" id="publicDayHint">
-            Tap a date to see which rooms are available or occupied.
+            Select a date to view room availability. Select the same date again to close.
           </p>
           <div id="publicDayBody" hidden></div>
         </div>
@@ -60,7 +60,8 @@
       const body = root.querySelector("#publicDayBody");
       if (!selectedDate) {
         hint.hidden = false;
-        hint.textContent = "Tap a date to see which rooms are available or occupied. Tap again to hide.";
+        hint.textContent =
+          "Select a date to view room availability. Select the same date again to close.";
         body.hidden = true;
         body.innerHTML = "";
         return;
@@ -70,7 +71,7 @@
       const breakdown = Av.getPublicDayBreakdown(selectedDate);
 
       hint.hidden = false;
-      hint.textContent = `${formatNiceDate(selectedDate)} · ${day.free} free · ${day.occupied} occupied · tap date again to hide`;
+      hint.textContent = `${formatNiceDate(selectedDate)} · ${day.free} available · ${day.occupied} reserved · select again to close`;
 
       body.hidden = false;
       let html = "";
@@ -85,11 +86,11 @@
             ? "Available"
             : r.free === 0
               ? "Fully booked"
-              : `${r.free} of ${r.total} available`;
+              : `Limited availability (${r.free} of ${r.total})`;
         html += `<div class="public-type-block">
           <div class="public-type-head">
             <strong>${r.name}</strong>
-            <span class="public-type-meta">${typeStatus} · ${r.pax} pax · ₱${Number(r.price || 0).toLocaleString("en-PH")}</span>
+            <span class="public-type-meta">${typeStatus} · ${r.pax} guests · ₱${Number(r.price || 0).toLocaleString("en-PH")}/night</span>
           </div>
           <ul class="public-unit-status">`;
         r.units.forEach((u) => {
@@ -97,7 +98,7 @@
           if (u.available) {
             html += `<li class="is-free"><span class="dot"></span>${label}: <strong>Available</strong></li>`;
           } else {
-            html += `<li class="is-busy"><span class="dot"></span>${label}: <strong>Occupied</strong></li>`;
+            html += `<li class="is-busy"><span class="dot"></span>${label}: <strong>Reserved</strong></li>`;
           }
         });
         html += `</ul></div>`;
@@ -134,7 +135,7 @@
 
           if (past) {
             // Past dates: visible but not clickable
-            html += `<span class="cal-day past" title="Past date" aria-disabled="true">${dayNum}</span>`;
+            html += `<span class="cal-day past" title="Unavailable — past date" aria-disabled="true">${dayNum}</span>`;
             return;
           }
 
@@ -143,9 +144,15 @@
           if (day.level === "full") status = "unavailable full";
           else if (day.level === "partial") status = "partial";
           const selected = dateStr === selectedDate ? "is-selected" : "";
+          const levelLabel =
+            day.level === "full"
+              ? "Fully booked"
+              : day.level === "partial"
+                ? "Limited availability"
+                : "Available";
           const title = selected
-            ? `${dateStr} · click again to hide details`
-            : `${dateStr} · ${day.free} free / ${day.occupied} occupied — click for details`;
+            ? `${dateStr} · ${levelLabel} — select again to close details`
+            : `${dateStr} · ${levelLabel} (${day.free} available, ${day.occupied} reserved) — select for details`;
           html += `<button type="button" class="cal-day ${status} ${selected}" data-public-date="${dateStr}" title="${title}" aria-pressed="${selected ? "true" : "false"}">${dayNum}</button>`;
         });
         html += `</div>`;

@@ -483,14 +483,14 @@
       const day = Av.getDayOccupancy(selectedDate);
       const note = Notes ? Notes.getNote(DAY_NOTE_KEY, selectedDate) : "";
       title.textContent = formatNiceDate(selectedDate);
-      sub.textContent = `${day.free} free · ${day.occupied} occupied · ${day.total} total units`;
+      sub.textContent = `${day.free} available · ${day.occupied} reserved · ${day.total} total units`;
       controls.hidden = false;
 
       let pill = "is-open";
-      let label = "All rooms free";
+      let label = "Available";
       if (day.level === "partial") {
         pill = "is-partial";
-        label = "Some rooms occupied";
+        label = "Limited availability";
       } else if (day.level === "full") {
         pill = "is-closed";
         label = "Fully booked";
@@ -530,7 +530,7 @@
             day.level === "full" ? "unavailable full" : day.level === "partial" ? "partial" : "available";
           const hasNote = Notes && Notes.hasNote(DAY_NOTE_KEY, dateStr);
           const selected = dateStr === selectedDate ? "is-selected" : "";
-          const title = `${dateStr} · ${day.free} free / ${day.occupied} occupied${hasNote ? " · note" : ""}`;
+          const title = `${dateStr} · ${day.free} available / ${day.occupied} reserved${hasNote ? " · note" : ""}`;
           html += `<button type="button" class="cal-day ${levelClass} ${past ? "past" : ""} ${selected} ${hasNote ? "has-note" : ""} admin-day" data-date="${dateStr}" title="${title}"><span class="cal-day-num">${dayNum}</span>${hasNote ? '<span class="cal-note-dot" aria-hidden="true"></span>' : ""}</button>`;
         });
         html += `</div>`;
