@@ -24,7 +24,10 @@
   const applyingRemote = Object.create(null);
 
   function firebaseCfg() {
-    return (window.ALMA_CONFIG && window.ALMA_CONFIG.firebase) || {};
+    // Prefer deploy-injected / local ALMA_FIREBASE; fall back to ALMA_CONFIG.firebase
+    const injected = window.ALMA_FIREBASE || {};
+    const fromConfig = (window.ALMA_CONFIG && window.ALMA_CONFIG.firebase) || {};
+    return Object.assign({}, fromConfig, injected);
   }
 
   function isConfigured() {

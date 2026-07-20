@@ -31,20 +31,12 @@ window.ALMA_CONFIG = {
   adminPassword: "almasadmin",
 
   /**
-   * Firebase (production) — public web config only.
-   * Safe to ship: restrict the key in Google Cloud Console to your domains.
-   * Admin Auth email/password are entered on admin.html and never stored in this file.
-   * Rules + Auth setup: FIREBASE.md
+   * Firebase web config is NOT stored here (avoids GitHub secret scanning).
+   * Production: injected at deploy into js/firebase-config.js via GitHub Actions secrets.
+   * Local: copy js/firebase-config.example.js → js/firebase-config.js (gitignored override) or edit the empty file with skip-worktree.
+   * See FIREBASE.md
    */
-  firebase: {
-    apiKey: "***REMOVED***",
-    authDomain: "almas-haven-c1998.firebaseapp.com",
-    projectId: "almas-haven-c1998",
-    storageBucket: "almas-haven-c1998.firebasestorage.app",
-    messagingSenderId: "497402113275",
-    appId: "1:497402113275:web:c2174f8ab5538fe14b145e",
-    measurementId: "G-SL3HR1MTKT",
-  },
+  firebase: {},
 
   /** Homepage hero photos */
   heroImages: [
