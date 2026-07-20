@@ -93,7 +93,7 @@ window.ALMA_CONFIG = {
    * Paste your GA4 Measurement ID (G-XXXXXXXX) or Google tag (GT-XXXXXXXX).
    * Loaded by js/google-tag.js on public pages only. Leave empty to disable.
    */
-  googleAnalyticsId: "",
+  googleAnalyticsId: "G-X11CX1VS59",
   /** Optional Search Console HTML-tag verification content value only */
   googleSiteVerification: "",
 

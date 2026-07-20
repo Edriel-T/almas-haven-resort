@@ -16,8 +16,8 @@
  * Never put Firebase API keys or service accounts here.
  */
 (function () {
-  // ★ Paste your ID here, example: "G-ABC123XYZ"
-  var MEASUREMENT_ID = "";
+  // Alma's Haven GA4 Measurement ID
+  var MEASUREMENT_ID = "G-X11CX1VS59";
 
   var cfg = window.ALMA_GOOGLE_TAG || {};
   var fromConfig =
