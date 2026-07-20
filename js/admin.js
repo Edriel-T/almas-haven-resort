@@ -1238,7 +1238,12 @@
   /* ---- Inbox ---- */
   function initInbox() {
     const list = document.getElementById("inboxList");
+    if (!list) return;
     const rooms = (window.ALMA_CONFIG && window.ALMA_CONFIG.rooms) || [];
+    /** @type {Set<string>} Keep open detail panels across re-renders */
+    const expandedIds = new Set();
+    let lastFingerprint = "";
+    let suppressNextRender = false;
 
     function typeLabel(type) {
       if (type === "reservation") return "Reservation";
@@ -1255,12 +1260,12 @@
           timeStyle: "short",
         });
       } catch {
-        return iso;
+        return iso || "";
       }
     }
 
     function escapeHtml(str) {
-      return String(str)
+      return String(str ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -1272,19 +1277,104 @@
       return r ? `${r.floor} · ${r.name}` : id || "";
     }
 
-    function renderInbox() {
-      if (!window.AlmaNotify) return;
-      const items = window.AlmaNotify.loadInbox();
-      const unread = items.filter((i) => !i.read).length;
-      document.getElementById("statTotal").textContent = String(items.length);
-      document.getElementById("statUnread").textContent = String(unread);
-      document.getElementById("statReservations").textContent = String(
-        items.filter((i) => i.type === "reservation").length
+    function guestName(item) {
+      return (
+        [item.firstName, item.lastName].filter(Boolean).join(" ") ||
+        item.name ||
+        "Guest"
       );
+    }
+
+    function buildDetailsHtml(item) {
+      const rows = [];
+      const name = guestName(item);
+      const email = item.email || item.contact || "";
+      if (name) rows.push(`<div class="inbox-detail-row"><span>Name</span><strong>${escapeHtml(name)}</strong></div>`);
+      if (email) rows.push(`<div class="inbox-detail-row"><span>Email</span><strong>${escapeHtml(email)}</strong></div>`);
+      if (item.topic) rows.push(`<div class="inbox-detail-row"><span>Topic</span><strong>${escapeHtml(item.topic)}</strong></div>`);
+      if (item.roomType) {
+        rows.push(
+          `<div class="inbox-detail-row"><span>Room</span><strong>${escapeHtml(roomLabel(item.roomType))}</strong></div>`
+        );
+      }
+      if (item.checkin || item.checkout) {
+        rows.push(
+          `<div class="inbox-detail-row"><span>Dates</span><strong>${escapeHtml(item.checkin || "?")} → ${escapeHtml(
+            item.checkout || "?"
+          )}</strong></div>`
+        );
+      }
+      if (item.guests) {
+        rows.push(
+          `<div class="inbox-detail-row"><span>Guests</span><strong>${escapeHtml(item.guests)}</strong></div>`
+        );
+      }
+      if (item.channel) {
+        rows.push(
+          `<div class="inbox-detail-row"><span>Channel</span><strong>${escapeHtml(item.channel)}</strong></div>`
+        );
+      }
+      if (item.createdAt) {
+        rows.push(
+          `<div class="inbox-detail-row"><span>Received</span><strong>${escapeHtml(formatWhen(item.createdAt))}</strong></div>`
+        );
+      }
+      const body = String(item.message || "").trim();
+      const bodyHtml = body
+        ? `<pre class="inbox-transcript">${escapeHtml(body)}</pre>`
+        : `<p class="inbox-muted">No message or transcript saved for this item.</p>`;
+      return `
+        <div class="inbox-detail-grid">${rows.join("")}</div>
+        <h4 class="inbox-detail-heading">${
+          item.type === "live_chat_ended" ? "Chat transcript" : "Message"
+        }</h4>
+        ${bodyHtml}`;
+    }
+
+    function updateBadges(items) {
+      const unread = items.filter((i) => !i.read).length;
+      const totalEl = document.getElementById("statTotal");
+      const unreadEl = document.getElementById("statUnread");
+      const resEl = document.getElementById("statReservations");
       const tabUnread = document.getElementById("tabUnread");
+      if (totalEl) totalEl.textContent = String(items.length);
+      if (unreadEl) unreadEl.textContent = String(unread);
+      if (resEl) {
+        resEl.textContent = String(items.filter((i) => i.type === "reservation").length);
+      }
       if (tabUnread) tabUnread.textContent = unread ? String(unread) : "";
+    }
+
+    function fingerprint(items) {
+      try {
+        return items
+          .map(
+            (i) =>
+              `${i.id}|${i.read ? 1 : 0}|${(i.message || "").length}|${i.createdAt || ""}`
+          )
+          .join(";");
+      } catch {
+        return String(Date.now());
+      }
+    }
+
+    function renderInbox(force) {
+      if (!window.AlmaNotify) return;
+      if (suppressNextRender) {
+        suppressNextRender = false;
+        // Still refresh badges after mark-read
+        updateBadges(window.AlmaNotify.loadInbox());
+        return;
+      }
+      const items = window.AlmaNotify.loadInbox();
+      updateBadges(items);
+      const fp = fingerprint(items);
+      // Skip full DOM rebuild if data unchanged (keeps expanded panels open)
+      if (!force && fp === lastFingerprint && list.children.length) return;
+      lastFingerprint = fp;
 
       if (!items.length) {
+        expandedIds.clear();
         list.innerHTML =
           '<div class="inbox-empty"><p><strong>No requests yet.</strong></p></div>';
         return;
@@ -1292,16 +1382,14 @@
 
       list.innerHTML = items
         .map((item) => {
-          const nameLine =
-            [item.firstName, item.lastName].filter(Boolean).join(" ") ||
-            item.name ||
-            "Guest";
+          const id = String(item.id || "");
+          const nameLine = guestName(item);
           const email = item.email || item.contact || "";
           const preview = String(item.message || "")
             .replace(/\s+/g, " ")
             .trim()
             .slice(0, 100);
-          const hasBody = Boolean(item.message && String(item.message).trim());
+          const isOpen = expandedIds.has(id);
           const metaBits = [
             email ? escapeHtml(email) : "",
             item.roomType ? escapeHtml(roomLabel(item.roomType)) : "",
@@ -1312,13 +1400,17 @@
             .filter(Boolean)
             .join(" · ");
           return `
-          <article class="inbox-item ${item.read ? "" : "unread"}" data-inbox-id="${escapeHtml(item.id)}">
+          <article class="inbox-item ${item.read ? "" : "unread"}${
+            isOpen ? " is-expanded" : ""
+          }" data-inbox-id="${escapeHtml(id)}">
             <header class="inbox-item-head">
               <div class="inbox-item-title">
-                <span class="type-pill ${item.type}">${typeLabel(item.type)}</span>
+                <span class="type-pill ${escapeHtml(item.type || "")}">${escapeHtml(
+                  typeLabel(item.type)
+                )}</span>
                 <strong>${escapeHtml(nameLine)}</strong>
               </div>
-              <span class="inbox-meta">${formatWhen(item.createdAt)}</span>
+              <span class="inbox-meta">${escapeHtml(formatWhen(item.createdAt))}</span>
             </header>
             ${metaBits ? `<p class="inbox-meta-line">${metaBits}</p>` : ""}
             ${
@@ -1329,78 +1421,82 @@
                 : ""
             }
             <div class="inbox-item-actions">
-              ${
-                hasBody
-                  ? `<button type="button" class="btn btn-ghost btn-sm" data-toggle-transcript="${escapeHtml(
-                      item.id
-                    )}">View details</button>`
-                  : ""
-              }
+              <button type="button" class="btn btn-ghost btn-sm" data-toggle-details>
+                ${isOpen ? "Hide details" : "View details"}
+              </button>
               ${
                 item.read
                   ? ""
-                  : `<button type="button" class="btn btn-ghost btn-sm" data-read="${escapeHtml(
-                      item.id
-                    )}">Mark read</button>`
+                  : `<button type="button" class="btn btn-ghost btn-sm" data-read>Mark read</button>`
               }
             </div>
-            ${
-              hasBody
-                ? `<div class="inbox-details" id="inbox-details-${escapeHtml(
-                    item.id
-                  )}" hidden>
-              <pre class="inbox-transcript">${escapeHtml(item.message)}</pre>
-            </div>`
-                : ""
-            }
+            <div class="inbox-details" ${isOpen ? "" : "hidden"}>
+              ${buildDetailsHtml(item)}
+            </div>
           </article>`;
         })
         .join("");
     }
 
     list.addEventListener("click", (e) => {
+      const article = e.target.closest(".inbox-item");
+      if (!article || !list.contains(article)) return;
+      const id = article.getAttribute("data-inbox-id") || "";
+
       const readBtn = e.target.closest("[data-read]");
       if (readBtn) {
-        window.AlmaNotify.markRead(readBtn.getAttribute("data-read"));
-        renderInbox();
+        if (window.AlmaNotify) window.AlmaNotify.markRead(id);
+        article.classList.remove("unread");
+        readBtn.remove();
+        updateBadges(window.AlmaNotify.loadInbox());
+        // Avoid collapse: next event will only refresh badges if fingerprint handled
+        lastFingerprint = fingerprint(window.AlmaNotify.loadInbox());
         return;
       }
-      const toggleBtn = e.target.closest("[data-toggle-transcript]");
+
+      const toggleBtn = e.target.closest("[data-toggle-details]");
       if (toggleBtn) {
-        const id = toggleBtn.getAttribute("data-toggle-transcript");
-        const panel = document.getElementById(`inbox-details-${id}`);
+        const panel = article.querySelector(".inbox-details");
         if (!panel) return;
-        const open = panel.hidden;
-        panel.hidden = !open;
-        toggleBtn.textContent = open ? "Hide details" : "View details";
-        if (open && window.AlmaNotify) {
+        const willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        article.classList.toggle("is-expanded", willOpen);
+        toggleBtn.textContent = willOpen ? "Hide details" : "View details";
+        if (willOpen) expandedIds.add(id);
+        else expandedIds.delete(id);
+
+        // Opening details marks the item read. markRead fires inbox-updated —
+        // suppress that re-render so the panel does not snap shut.
+        if (willOpen && window.AlmaNotify && article.classList.contains("unread")) {
+          suppressNextRender = true;
           window.AlmaNotify.markRead(id);
-          // soft refresh unread badge without collapsing
-          const unread = window.AlmaNotify.loadInbox().filter((i) => !i.read).length;
-          const tabUnread = document.getElementById("tabUnread");
-          if (tabUnread) tabUnread.textContent = unread ? String(unread) : "";
-          document.getElementById("statUnread").textContent = String(unread);
-          const article = list.querySelector(`[data-inbox-id="${id}"]`);
-          if (article) article.classList.remove("unread");
+          article.classList.remove("unread");
+          const markBtn = article.querySelector("[data-read]");
+          if (markBtn) markBtn.remove();
+          updateBadges(window.AlmaNotify.loadInbox());
+          lastFingerprint = fingerprint(window.AlmaNotify.loadInbox());
         }
       }
     });
 
     document.getElementById("markAll")?.addEventListener("click", () => {
       window.AlmaNotify.markAllRead();
-      renderInbox();
+      lastFingerprint = "";
+      renderInbox(true);
       toast("All marked read");
     });
     document.getElementById("clearAll")?.addEventListener("click", () => {
       if (confirm("Clear inbox?")) {
+        expandedIds.clear();
         window.AlmaNotify.clearInbox();
-        renderInbox();
+        lastFingerprint = "";
+        renderInbox(true);
         toast("Inbox cleared");
       }
     });
-    window.addEventListener("alma:inbox-updated", renderInbox);
-    setInterval(renderInbox, 5000);
-    renderInbox();
+    window.addEventListener("alma:inbox-updated", () => renderInbox(false));
+    setInterval(() => renderInbox(false), 8000);
+    renderInbox(true);
   }
 
   // Restore session after refresh (Firebase Auth LOCAL persistence + local flags)
