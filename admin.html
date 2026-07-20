@@ -63,42 +63,74 @@
     </div>
   </div>
 
-  <div id="adminApp" hidden>
-    <header class="admin-header">
-      <div class="container">
-        <div class="admin-header-text">
-          <h1>Admin panel</h1>
-          <p>Manage availability, rates, photos, and live chat</p>
-        </div>
-        <div class="admin-actions">
-          <span class="admin-cloud-badge" id="adminCloudBadge" title="Cloud sync status">Cloud: …</span>
-          <label class="admin-online-toggle admin-btn-light">
-            <input type="checkbox" id="agentOnlineToggle" />
-            <span id="agentOnlineLabel">Go online</span>
-          </label>
-          <button type="button" class="btn btn-ghost admin-btn-light" id="adminLogout">Sign out</button>
-          <a class="btn btn-ghost admin-btn-light" href="index.html">Website</a>
+  <div id="adminApp" class="admin-shell" hidden>
+    <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop" hidden></div>
+
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin navigation">
+      <div class="admin-sidebar-brand">
+        <span class="admin-sidebar-mark" aria-hidden="true">AH</span>
+        <div>
+          <strong>Alma's Haven</strong>
+          <span>Staff admin</span>
         </div>
       </div>
-    </header>
 
-    <main class="admin-main">
-      <div class="container">
-        <div class="admin-tabs" role="tablist">
-          <button type="button" class="admin-tab active" data-tab="live" role="tab" aria-selected="true">Live chat <span class="tab-count" id="tabLive"></span></button>
-          <button type="button" class="admin-tab" data-tab="availability" role="tab" aria-selected="false">Availability</button>
-          <button type="button" class="admin-tab" data-tab="prices" role="tab" aria-selected="false">Rates</button>
-          <button type="button" class="admin-tab" data-tab="photos" role="tab" aria-selected="false">Photos</button>
-          <button type="button" class="admin-tab" data-tab="inbox" role="tab" aria-selected="false">Inbox <span class="tab-count" id="tabUnread"></span></button>
+      <nav class="admin-nav" role="tablist" aria-label="Sections">
+        <button type="button" class="admin-nav-item active" data-tab="live" role="tab" aria-selected="true">
+          <span class="admin-nav-ico" aria-hidden="true">💬</span>
+          <span class="admin-nav-label">Live chat</span>
+          <span class="admin-nav-count" id="tabLive"></span>
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="availability" role="tab" aria-selected="false">
+          <span class="admin-nav-ico" aria-hidden="true">📅</span>
+          <span class="admin-nav-label">Availability</span>
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="prices" role="tab" aria-selected="false">
+          <span class="admin-nav-ico" aria-hidden="true">₱</span>
+          <span class="admin-nav-label">Rates</span>
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="photos" role="tab" aria-selected="false">
+          <span class="admin-nav-ico" aria-hidden="true">🖼</span>
+          <span class="admin-nav-label">Photos</span>
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="inbox" role="tab" aria-selected="false">
+          <span class="admin-nav-ico" aria-hidden="true">📥</span>
+          <span class="admin-nav-label">Inbox</span>
+          <span class="admin-nav-count" id="tabUnread"></span>
+        </button>
+      </nav>
+
+      <div class="admin-sidebar-foot">
+        <span class="admin-cloud-badge" id="adminCloudBadge" title="Cloud sync status">Cloud: …</span>
+        <label class="admin-online-toggle">
+          <input type="checkbox" id="agentOnlineToggle" />
+          <span id="agentOnlineLabel">Go online</span>
+        </label>
+        <a class="admin-side-link" href="index.html">View website</a>
+        <button type="button" class="btn btn-ghost btn-block admin-signout" id="adminLogout">Sign out</button>
+      </div>
+    </aside>
+
+    <div class="admin-main-wrap">
+      <header class="admin-topbar">
+        <button type="button" class="admin-hamburger" id="adminMenuBtn" aria-label="Open menu" aria-controls="adminSidebar" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="admin-topbar-title">
+          <h1 id="adminPageTitle">Live chat</h1>
+          <p id="adminPageLead">Chat with guests on the website</p>
         </div>
+        <div class="admin-topbar-status">
+          <span class="admin-cloud-badge admin-cloud-badge--top" id="adminCloudBadgeTop" title="Cloud sync status">Cloud: …</span>
+        </div>
+      </header>
 
+      <main class="admin-content">
         <!-- Live chat -->
-        <section id="panel-live" class="admin-panel">
-          <p class="section-lead">
-            Turn <strong>Go online</strong> on so guests can chat with you on the website.
-            Guests share their name and request first, then join a queue if you are busy.
-            When you are offline, guests are directed to Facebook.
-          </p>
+        <section id="panel-live" class="admin-panel" data-title="Live chat" data-lead="Chat with guests on the website">
+          <div class="admin-panel-toolbar">
+            <p class="admin-hint">Turn <strong>Go online</strong> in the menu so guests can reach you. Offline guests are sent to Facebook.</p>
+          </div>
           <div class="live-chat-layout">
             <aside class="live-chat-list" id="liveChatList"></aside>
             <div class="live-chat-thread">
@@ -117,28 +149,19 @@
         </section>
 
         <!-- Availability -->
-        <section id="panel-availability" class="admin-panel" hidden>
-          <div class="admin-cal-toolbar">
+        <section id="panel-availability" class="admin-panel" hidden data-title="Availability" data-lead="Manage room occupancy by date">
+          <div class="admin-panel-toolbar admin-panel-toolbar--row">
             <div class="admin-cal-nav">
-              <button type="button" class="btn btn-ghost" id="adminCalPrev">‹ Previous</button>
+              <button type="button" class="btn btn-ghost" id="adminCalPrev">‹</button>
               <strong id="adminCalLabel"></strong>
-              <button type="button" class="btn btn-ghost" id="adminCalNext">Next ›</button>
+              <button type="button" class="btn btn-ghost" id="adminCalNext">›</button>
             </div>
-          </div>
-
-          <p class="section-lead">
-            Select a date to view every room. Assign a guest with check-in and check-out dates.
-            <strong style="color:#1a9a52">Green</strong> = available ·
-            <strong style="color:#c9891a">Amber</strong> = limited availability ·
-            <strong style="color:#c43228">Red</strong> = fully booked.
-            Guest names and room notes are visible to staff only.
-          </p>
-
-          <div class="booking-legend admin-legend">
-            <span><i class="leg available"></i> Available</span>
-            <span><i class="leg partial"></i> Limited availability</span>
-            <span><i class="leg unavailable"></i> Fully booked</span>
-            <span><i class="leg admin-note-leg"></i> Room note</span>
+            <div class="booking-legend admin-legend">
+              <span><i class="leg available"></i> Available</span>
+              <span><i class="leg partial"></i> Limited</span>
+              <span><i class="leg unavailable"></i> Full</span>
+              <span><i class="leg admin-note-leg"></i> Note</span>
+            </div>
           </div>
 
           <div class="admin-cal-layout admin-cal-layout--wide">
@@ -148,7 +171,7 @@
 
             <aside class="admin-day-panel admin-day-panel--wide" id="adminDayPanel">
               <h3 id="adminDayTitle">Select a date</h3>
-              <p class="lp-note" id="adminDaySub">Select a day to view room occupancy.</p>
+              <p class="lp-note" id="adminDaySub">Select a day to view rooms.</p>
               <div id="adminDayControls" hidden>
                 <div class="admin-day-status" id="adminDayStatus"></div>
                 <div class="admin-unit-list" id="adminUnitList"></div>
@@ -174,13 +197,13 @@
                       </label>
                     </div>
                     <label class="admin-field">
-                      Room note <span class="admin-muted">(optional · staff only)</span>
-                      <input type="text" id="assignNote" placeholder="Deposit, Facebook name, or special request" />
+                      Room note <span class="admin-muted">(optional)</span>
+                      <input type="text" id="assignNote" placeholder="Deposit, Facebook name, or request" />
                     </label>
                     <div class="admin-actions admin-actions-row">
                       <button type="submit" class="btn btn-primary" id="assignSave">Save</button>
                       <button type="button" class="btn btn-ghost" id="assignCancel">Cancel</button>
-                      <button type="button" class="btn btn-ghost" id="assignRemove" hidden>Remove stay</button>
+                      <button type="button" class="btn btn-ghost" id="assignRemove" hidden>Remove</button>
                     </div>
                   </form>
                 </div>
@@ -188,76 +211,75 @@
             </aside>
           </div>
 
-          <div class="admin-actions admin-actions-row" style="margin-top:1.25rem">
-            <button type="button" class="btn btn-ghost" id="exportAvail">Export data</button>
+          <div class="admin-footer-actions">
+            <button type="button" class="btn btn-ghost" id="exportAvail">Export</button>
             <label class="btn btn-ghost" style="cursor:pointer">
-              Import data
+              Import
               <input type="file" id="importAvail" accept="application/json,.json" hidden />
             </label>
-            <button type="button" class="btn btn-primary" id="clearAvail">Clear all stays</button>
+            <button type="button" class="btn btn-ghost" id="clearAvail">Clear stays</button>
           </div>
         </section>
 
         <!-- Rates -->
-        <section id="panel-prices" class="admin-panel" hidden>
-          <p class="section-lead">
-            Update nightly room rates shown on the website, booking form, and chat.
-            Changes sync to all devices when cloud is connected.
-          </p>
+        <section id="panel-prices" class="admin-panel" hidden data-title="Rates" data-lead="Update nightly room rates">
+          <div class="admin-panel-toolbar">
+            <p class="admin-hint">Rates appear on the website, booking form, and chat. Changes sync when cloud is connected.</p>
+          </div>
           <div class="admin-price-list" id="adminPriceList"></div>
-          <div class="admin-actions admin-actions-row" style="margin-top:1rem">
+          <div class="admin-footer-actions">
             <button type="button" class="btn btn-primary" id="priceSaveAll">Save rates</button>
-            <button type="button" class="btn btn-ghost" id="priceResetAll">Reset to defaults</button>
+            <button type="button" class="btn btn-ghost" id="priceResetAll">Reset defaults</button>
           </div>
         </section>
 
         <!-- Photos -->
-        <section id="panel-photos" class="admin-panel" hidden>
-          <p class="section-lead">
-            Choose photos for each room type. Guests see these when they open a room card.
-            Select images from the library or upload from your device, then save.
-          </p>
-          <label class="admin-field admin-field-room">
-            Room
-            <select id="photoRoomSelect"></select>
-          </label>
-          <p class="lp-note" id="photoDefaultsHint"></p>
-
-          <h3 class="admin-subhead">Selected photos</h3>
-          <div class="admin-photo-selected" id="photoSelected"></div>
-
-          <h3 class="admin-subhead">Photo library</h3>
-          <div class="admin-photo-library" id="photoLibrary"></div>
-
-          <div class="admin-upload-row">
-            <label class="btn btn-ghost" style="cursor:pointer">
-              Upload images
-              <input type="file" id="photoUpload" accept="image/*" multiple hidden />
+        <section id="panel-photos" class="admin-panel" hidden data-title="Photos" data-lead="Room gallery images for guests">
+          <div class="admin-panel-toolbar admin-panel-toolbar--row">
+            <label class="admin-field admin-field-room">
+              Room
+              <select id="photoRoomSelect"></select>
             </label>
-            <span class="lp-note">Uploaded images are stored for this site session.</span>
+            <p class="lp-note" id="photoDefaultsHint"></p>
           </div>
 
-          <div class="admin-actions admin-actions-row" style="margin-top:1rem">
+          <div class="admin-photo-section">
+            <h3 class="admin-subhead">Selected</h3>
+            <div class="admin-photo-selected" id="photoSelected"></div>
+          </div>
+
+          <div class="admin-photo-section">
+            <h3 class="admin-subhead">Library</h3>
+            <div class="admin-photo-library" id="photoLibrary"></div>
+          </div>
+
+          <div class="admin-footer-actions">
+            <label class="btn btn-ghost" style="cursor:pointer">
+              Upload
+              <input type="file" id="photoUpload" accept="image/*" multiple hidden />
+            </label>
             <button type="button" class="btn btn-primary" id="photoSave">Save photos</button>
-            <button type="button" class="btn btn-ghost" id="photoReset">Reset to defaults</button>
+            <button type="button" class="btn btn-ghost" id="photoReset">Reset</button>
           </div>
         </section>
 
         <!-- Inbox -->
-        <section id="panel-inbox" class="admin-panel" hidden>
-          <div class="admin-stats">
-            <div class="stat-card"><strong id="statTotal">0</strong><span>Total requests</span></div>
-            <div class="stat-card"><strong id="statUnread">0</strong><span>Unread</span></div>
-            <div class="stat-card"><strong id="statReservations">0</strong><span>Reservations</span></div>
-          </div>
-          <div class="admin-actions" style="margin-bottom:1rem">
-            <button type="button" class="btn btn-ghost" id="markAll">Mark all read</button>
-            <button type="button" class="btn btn-primary" id="clearAll">Clear inbox</button>
+        <section id="panel-inbox" class="admin-panel" hidden data-title="Inbox" data-lead="Ended chats and guest requests">
+          <div class="admin-panel-toolbar admin-panel-toolbar--row">
+            <div class="admin-stats">
+              <div class="stat-card"><strong id="statTotal">0</strong><span>Total</span></div>
+              <div class="stat-card"><strong id="statUnread">0</strong><span>Unread</span></div>
+              <div class="stat-card"><strong id="statReservations">0</strong><span>Bookings</span></div>
+            </div>
+            <div class="admin-footer-actions admin-footer-actions--inline">
+              <button type="button" class="btn btn-ghost" id="markAll">Mark all read</button>
+              <button type="button" class="btn btn-ghost" id="clearAll">Clear</button>
+            </div>
           </div>
           <div class="inbox-list" id="inboxList"></div>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

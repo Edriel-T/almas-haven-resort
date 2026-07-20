@@ -255,6 +255,7 @@
   function initAdminApp() {
     if (appReady) return;
     appReady = true;
+    initSidebar();
     initTabs();
     initCloudBadge();
     initLiveAgentDesk();
@@ -266,32 +267,62 @@
   }
 
   function updateCloudBadge(detail) {
-    const el = document.getElementById("adminCloudBadge");
-    if (!el) return;
+    const els = [
+      document.getElementById("adminCloudBadge"),
+      document.getElementById("adminCloudBadgeTop"),
+    ].filter(Boolean);
+    if (!els.length) return;
     const s = detail || (window.AlmaCloud && window.AlmaCloud.status()) || {};
-    el.classList.remove("is-ok", "is-warn", "is-off");
+    let text = "Cloud: connecting…";
+    let cls = "is-warn";
+    let title = "Connecting to cloud…";
     if (!s.configured) {
-      el.textContent = "Cloud: offline";
-      el.classList.add("is-off");
-      el.title = "Cloud is not configured";
+      text = "Cloud: offline";
+      cls = "is-off";
+      title = "Cloud is not configured";
     } else if (s.writeReady) {
-      el.textContent = "Cloud: connected";
-      el.classList.add("is-ok");
-      el.title = s.user ? `Signed in as ${s.user}` : "Cloud writes enabled";
+      text = "Cloud: connected";
+      cls = "is-ok";
+      title = s.user ? `Signed in as ${s.user}` : "Cloud writes enabled";
     } else if (s.ready) {
-      el.textContent = "Cloud: view only";
-      el.classList.add("is-warn");
-      el.title = "Connected for reading. Sign in again to save changes.";
-    } else {
-      el.textContent = "Cloud: connecting…";
-      el.classList.add("is-warn");
-      el.title = "Connecting to cloud…";
+      text = "Cloud: view only";
+      cls = "is-warn";
+      title = "Connected for reading. Sign in again to save changes.";
     }
+    els.forEach((el) => {
+      el.classList.remove("is-ok", "is-warn", "is-off");
+      el.classList.add(cls);
+      el.textContent = text;
+      el.title = title;
+    });
   }
 
   function initCloudBadge() {
     updateCloudBadge();
     window.addEventListener("alma:cloud-status", (e) => updateCloudBadge(e.detail));
+  }
+
+  function setSidebarOpen(open) {
+    const shell = document.getElementById("adminApp");
+    const btn = document.getElementById("adminMenuBtn");
+    const backdrop = document.getElementById("adminSidebarBackdrop");
+    if (!shell) return;
+    shell.classList.toggle("sidebar-open", !!open);
+    if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (backdrop) backdrop.hidden = !open;
+  }
+
+  function initSidebar() {
+    document.getElementById("adminMenuBtn")?.addEventListener("click", () => {
+      const shell = document.getElementById("adminApp");
+      setSidebarOpen(!shell?.classList.contains("sidebar-open"));
+    });
+    document.getElementById("adminSidebarBackdrop")?.addEventListener("click", () => {
+      setSidebarOpen(false);
+    });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 900) setSidebarOpen(false);
+    });
   }
 
   /* ---- Live agent desk ---- */
@@ -457,12 +488,13 @@
     const q = Live.listQueued().length;
     const a = Live.listActive().length;
     if (tab) {
-      tab.textContent = chats.length ? `(${a} active · ${q} waiting)` : "";
+      tab.textContent = chats.length ? `${a + q}` : "";
+      tab.title = chats.length ? `${a} active · ${q} waiting` : "";
     }
 
     if (!chats.length) {
       list.innerHTML =
-        '<p class="lp-note" style="padding:1rem">No active chats. Go online so guests can message you on the website.</p>';
+        '<p class="lp-note" style="padding:1rem">No active chats. Use <strong>Go online</strong> in the menu so guests can reach you.</p>';
       return;
     }
 
@@ -582,26 +614,40 @@
       .replace(/"/g, "&quot;");
   }
 
+  function setActiveTab(id) {
+    const panels = ["live", "availability", "prices", "photos", "inbox"];
+    document.querySelectorAll(".admin-nav-item, .admin-tab").forEach((t) => {
+      const on = t.getAttribute("data-tab") === id;
+      t.classList.toggle("active", on);
+      t.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    panels.forEach((p) => {
+      const el = document.getElementById(`panel-${p}`);
+      if (el) el.hidden = p !== id;
+    });
+    const panel = document.getElementById(`panel-${id}`);
+    const title = document.getElementById("adminPageTitle");
+    const lead = document.getElementById("adminPageLead");
+    if (title) title.textContent = panel?.getAttribute("data-title") || "Admin";
+    if (lead) lead.textContent = panel?.getAttribute("data-lead") || "";
+    if (id === "photos") loadPhotoEditor();
+    if (id === "prices") renderPriceList();
+    if (id === "live") renderLiveList();
+    if (id === "inbox") {
+      // soft refresh if inbox already initialized
+      window.dispatchEvent(new CustomEvent("alma:inbox-updated"));
+    }
+    setSidebarOpen(false);
+  }
+
   function initTabs() {
-    document.querySelectorAll(".admin-tab").forEach((tab) => {
+    document.querySelectorAll(".admin-nav-item, .admin-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
-        document.querySelectorAll(".admin-tab").forEach((t) => {
-          t.classList.remove("active");
-          t.setAttribute("aria-selected", "false");
-        });
-        tab.classList.add("active");
-        tab.setAttribute("aria-selected", "true");
         const id = tab.getAttribute("data-tab");
-        const panels = ["live", "availability", "prices", "photos", "inbox"];
-        panels.forEach((p) => {
-          const el = document.getElementById(`panel-${p}`);
-          if (el) el.hidden = p !== id;
-        });
-        if (id === "photos") loadPhotoEditor();
-        if (id === "prices") renderPriceList();
-        if (id === "live") renderLiveList();
+        if (id) setActiveTab(id);
       });
     });
+    setActiveTab("live");
   }
 
   function imgSrcAdmin(path) {
