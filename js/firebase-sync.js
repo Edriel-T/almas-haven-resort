@@ -255,32 +255,62 @@
 
   /**
    * Wait for Firebase Auth to restore persisted session (after refresh).
+   * Prefers authStateReady() when available so we don't race the restore.
    */
-  function waitForAuth(timeoutMs) {
-    const ms = typeof timeoutMs === "number" ? timeoutMs : 8000;
-    return new Promise((resolve) => {
-      if (!auth) {
-        resolve(null);
-        return;
-      }
-      if (auth.currentUser) {
-        writeReady = true;
+  async function waitForAuth(timeoutMs) {
+    const ms = typeof timeoutMs === "number" ? timeoutMs : 12000;
+    if (!auth) return null;
+
+    try {
+      if (typeof auth.authStateReady === "function") {
+        await Promise.race([
+          auth.authStateReady(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("auth-timeout")), ms)),
+        ]);
+        const user = auth.currentUser || null;
+        writeReady = !!user;
         emitStatus();
-        resolve(auth.currentUser);
-        return;
+        return user;
       }
+    } catch {
+      /* fall through to observer + timeout */
+    }
+
+    if (auth.currentUser) {
+      writeReady = true;
+      emitStatus();
+      return auth.currentUser;
+    }
+
+    return new Promise((resolve) => {
       let done = false;
+      let sawEvent = false;
       const finish = (user) => {
         if (done) return;
         done = true;
         clearTimeout(timer);
-        unsub();
+        try {
+          unsub();
+        } catch {
+          /* ignore */
+        }
         writeReady = !!user;
         emitStatus();
         resolve(user || null);
       };
-      const unsub = auth.onAuthStateChanged((user) => finish(user));
-      const timer = setTimeout(() => finish(auth.currentUser || null), ms);
+      // First onAuthStateChanged fires after Auth finishes restoring from storage.
+      const unsub = auth.onAuthStateChanged((user) => {
+        sawEvent = true;
+        finish(user);
+      });
+      const timer = setTimeout(() => {
+        // Prefer currentUser if restore completed slightly after the event
+        finish(auth.currentUser || null);
+      }, ms);
+      // Safety: if somehow no event and no timer path, still resolve
+      if (auth.currentUser && !sawEvent) {
+        finish(auth.currentUser);
+      }
     });
   }
 
@@ -333,15 +363,18 @@
 
   async function mustChangePassword() {
     if (!ready || !db || !auth || !auth.currentUser) return false;
+    if (auth.currentUser.isAnonymous) return false;
     try {
       const snap = await db.collection(COLLECTION).doc(DOC_KEYS.adminMeta).get();
+      // First staff login ever → require password change
       if (!snap.exists) return true;
       const payload = snap.data();
       const data = payload && payload.data !== undefined ? payload.data : payload;
       return !(data && data.passwordChanged === true);
     } catch (err) {
       console.warn("[AlmaCloud] mustChangePassword check failed:", err.message);
-      return true;
+      // Don't force password screen on network/rule errors during refresh restore
+      return false;
     }
   }
 

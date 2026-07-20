@@ -12,8 +12,31 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>" />
+  <!-- Avoid login flash on refresh when a staff session flag exists -->
+  <script>
+    (function () {
+      try {
+        var k = "almas_haven_admin_session";
+        if (sessionStorage.getItem(k) === "1" || localStorage.getItem(k) === "1") {
+          document.documentElement.classList.add("admin-session-pending");
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+  <style>
+    html.admin-session-pending #adminLogin { display: none !important; }
+    html.admin-session-pending #adminBoot { display: grid !important; }
+  </style>
 </head>
 <body class="admin-body">
+  <!-- Brief restore screen (avoids login flash when already signed in) -->
+  <div id="adminBoot" class="admin-boot" hidden>
+    <div class="admin-boot-card">
+      <div class="admin-boot-spinner" aria-hidden="true"></div>
+      <p>Restoring your session…</p>
+    </div>
+  </div>
+
   <!-- Login gate -->
   <div id="adminLogin" class="admin-login">
     <div class="admin-login-card">

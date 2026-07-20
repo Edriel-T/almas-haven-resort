@@ -3,6 +3,7 @@
  */
 (function () {
   const SESSION_KEY = "almas_haven_admin_session";
+  const SESSION_EMAIL_KEY = "almas_haven_admin_email";
   const LOCAL_PW_KEY = "almas_haven_admin_local_pw_v1";
   const LOCAL_PW_CHANGED_KEY = "almas_haven_admin_local_pw_changed_v1";
   const toastEl = document.getElementById("toast");
@@ -46,16 +47,26 @@
 
   function isLoggedIn() {
     try {
-      return sessionStorage.getItem(SESSION_KEY) === "1";
+      return (
+        sessionStorage.getItem(SESSION_KEY) === "1" ||
+        localStorage.getItem(SESSION_KEY) === "1"
+      );
     } catch {
       return false;
     }
   }
 
-  function setLoggedIn(on) {
+  function setLoggedIn(on, email) {
     try {
-      if (on) sessionStorage.setItem(SESSION_KEY, "1");
-      else sessionStorage.removeItem(SESSION_KEY);
+      if (on) {
+        sessionStorage.setItem(SESSION_KEY, "1");
+        localStorage.setItem(SESSION_KEY, "1");
+        if (email) localStorage.setItem(SESSION_EMAIL_KEY, String(email));
+      } else {
+        sessionStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SESSION_EMAIL_KEY);
+      }
     } catch {
       /* ignore */
     }
@@ -65,9 +76,16 @@
     const login = document.getElementById("adminLogin");
     const change = document.getElementById("adminChangePw");
     const app = document.getElementById("adminApp");
+    const boot = document.getElementById("adminBoot");
+    if (boot) boot.hidden = which !== "boot";
     if (login) login.hidden = which !== "login";
     if (change) change.hidden = which !== "change";
     if (app) app.hidden = which !== "app";
+    document.body.classList.toggle("admin-booting", which === "boot");
+    // Early HTML class only used before JS; clear once we control screens
+    if (which !== "boot") {
+      document.documentElement.classList.remove("admin-session-pending");
+    }
   }
 
   function cloudEnabled() {
@@ -102,7 +120,7 @@
   }
 
   async function enterAdminAfterAuth(opts) {
-    const { localMode, skipPwCheck } = opts || {};
+    const { localMode, skipPwCheck, quiet } = opts || {};
     pendingLocalMode = !!localMode;
 
     if (!skipPwCheck) {
@@ -110,29 +128,42 @@
       if (localMode) {
         mustChange = localPasswordNeedsChange();
       } else if (window.AlmaCloud) {
-        mustChange = await window.AlmaCloud.mustChangePassword();
+        try {
+          mustChange = await window.AlmaCloud.mustChangePassword();
+        } catch {
+          mustChange = false;
+        }
       }
       if (mustChange) {
-        setLoggedIn(true);
         showScreen("change");
         document.getElementById("adminNewPw")?.focus();
-        toast("Please create a new password to continue");
+        if (!quiet) toast("Please create a new password to continue");
         return;
       }
     }
 
-    setLoggedIn(true);
+    // Keep session flags so refresh restores the admin app
+    if (!isLoggedIn()) setLoggedIn(true);
     showScreen("app");
     initAdminApp();
-    if (!localMode && window.AlmaCloud) {
-      toast("Signed in. Cloud sync is on.");
+    updateCloudBadge();
+    if (!quiet) {
+      if (!localMode && window.AlmaCloud) {
+        toast("Signed in. Cloud sync is on.");
+        try {
+          await window.AlmaCloud.uploadLocalToCloud();
+        } catch {
+          /* optional */
+        }
+      } else {
+        toast("Signed in");
+      }
+    } else if (!localMode && window.AlmaCloud) {
       try {
         await window.AlmaCloud.uploadLocalToCloud();
       } catch {
         /* optional */
       }
-    } else {
-      toast("Signed in");
     }
   }
 
@@ -153,9 +184,11 @@
 
     try {
       if (cloudEnabled()) {
-        await window.AlmaCloud.signInAdmin(emailInput.value, passInput.value);
+        const user = await window.AlmaCloud.signInAdmin(emailInput.value, passInput.value);
+        setLoggedIn(true, user && user.email);
         await enterAdminAfterAuth({ localMode: false });
       } else if (passInput.value === expectedLocalPassword()) {
+        setLoggedIn(true);
         await enterAdminAfterAuth({ localMode: true });
       } else {
         err.hidden = false;
@@ -308,6 +341,7 @@
     const backdrop = document.getElementById("adminSidebarBackdrop");
     if (!shell) return;
     shell.classList.toggle("sidebar-open", !!open);
+    document.body.classList.toggle("admin-drawer-open", !!open);
     if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
     if (backdrop) backdrop.hidden = !open;
   }
@@ -321,7 +355,13 @@
       setSidebarOpen(false);
     });
     window.addEventListener("resize", () => {
-      if (window.innerWidth > 900) setSidebarOpen(false);
+      if (window.innerWidth > 960) setSidebarOpen(false);
+    });
+    // Close drawer after picking a section on mobile
+    document.querySelectorAll(".admin-nav-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (window.innerWidth <= 960) setSidebarOpen(false);
+      });
     });
   }
 
@@ -1363,31 +1403,52 @@
     renderInbox();
   }
 
-  // Restore session after refresh (Firebase Auth persistence + local session)
+  // Restore session after refresh (Firebase Auth LOCAL persistence + local flags)
   async function bootAdmin() {
     setupLoginFormMode();
 
     if (cloudEnabled() && window.AlmaCloud) {
+      // Always boot first so refresh never flashes the login form while Auth restores
+      showScreen("boot");
       try {
         await window.AlmaCloud.init();
-        const user = await window.AlmaCloud.waitForAuth(8000);
-        if (user) {
-          setLoggedIn(true);
-          pendingLocalMode = false;
-          const mustChange = await window.AlmaCloud.mustChangePassword();
-          if (mustChange) {
-            showScreen("change");
-            toast("Please create a new password to continue");
-          } else {
-            showScreen("app");
-            initAdminApp();
-            updateCloudBadge();
+        let user = await window.AlmaCloud.waitForAuth(12000);
+        // Staff only — ignore guest anonymous auth from the public chat
+        if (user && user.isAnonymous) {
+          user = null;
+        }
+        // One short retry if restore was slow (IndexedDB)
+        if (!user && isLoggedIn()) {
+          await new Promise((r) => setTimeout(r, 400));
+          user = window.AlmaCloud.getCurrentUser && window.AlmaCloud.getCurrentUser();
+          if (user && user.isAnonymous) user = null;
+          if (!user) {
+            user = await window.AlmaCloud.waitForAuth(4000);
+            if (user && user.isAnonymous) user = null;
           }
+        }
+        if (user && !user.isAnonymous) {
+          setLoggedIn(true, user.email || "");
+          pendingLocalMode = false;
+          await enterAdminAfterAuth({ localMode: false, quiet: true });
           return;
         }
       } catch (err) {
         console.warn("Admin session restore failed:", err);
+        // If we still have a local session flag and a staff user, stay in admin
+        try {
+          const u = window.AlmaCloud.getCurrentUser && window.AlmaCloud.getCurrentUser();
+          if (u && !u.isAnonymous) {
+            setLoggedIn(true, u.email || "");
+            pendingLocalMode = false;
+            await enterAdminAfterAuth({ localMode: false, quiet: true });
+            return;
+          }
+        } catch {
+          /* ignore */
+        }
       }
+      // Confirmed: no staff Firebase session → show login
       setLoggedIn(false);
       showScreen("login");
       return;
@@ -1407,11 +1468,18 @@
     }
   }
 
-  if (window.AlmaCloud) {
-    window.AlmaCloud.init().finally(() => {
-      bootAdmin();
-    });
-  } else {
-    bootAdmin();
+  // Immediate boot screen before async work (login is default-hidden when session exists via inline script)
+  try {
+    if (
+      sessionStorage.getItem(SESSION_KEY) === "1" ||
+      localStorage.getItem(SESSION_KEY) === "1"
+    ) {
+      showScreen("boot");
+    }
+  } catch {
+    /* ignore */
   }
+
+  // Single init path — bootAdmin calls AlmaCloud.init() itself
+  bootAdmin();
 })();
