@@ -1478,6 +1478,11 @@ p:last-child {
   min-width: 140px;
 }
 
+/* Accept only for queued chats — never show when active */
+#liveChatAccept[hidden] {
+  display: none !important;
+}
+
 .live-chat-need {
   margin: 0;
   padding: 0.55rem 1rem;
