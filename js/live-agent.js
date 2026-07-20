@@ -471,19 +471,29 @@
     return next;
   }
 
-  function joinQueue({ name, need, topic }) {
+  function joinQueue({ name, firstName, lastName, email, need, topic }) {
     // Kick off guest auth early so cloud writes work
     ensureAuthForWrite();
 
     const id = getGuestId();
     const chats = loadChats();
-    const guestName = String(name || "Guest").trim() || "Guest";
+    const first = String(firstName || "").trim();
+    const last = String(lastName || "").trim();
+    const guestEmail = String(email || "").trim();
+    const guestName =
+      [first, last].filter(Boolean).join(" ") ||
+      String(name || "Guest").trim() ||
+      "Guest";
     const needText = String(need || "").trim();
     const topicLabel = topic || "help";
 
     let chat = chats[id];
     if (chat && (chat.status === "active" || chat.status === "queued")) {
       chat.guestName = guestName;
+      chat.firstName = first || chat.firstName || "";
+      chat.lastName = last || chat.lastName || "";
+      chat.email = guestEmail || chat.email || "";
+      chat.guestContact = guestEmail || chat.guestContact || "";
       if (needText) {
         chat.need = needText;
         chat.messages = chat.messages || [];
@@ -507,6 +517,10 @@
     chat = {
       id,
       guestName,
+      firstName: first,
+      lastName: last,
+      email: guestEmail,
+      guestContact: guestEmail,
       need: needText,
       topic: topicLabel,
       status,
@@ -595,10 +609,19 @@
   }
 
   function formatChatTranscript(chat, who) {
+    const fullName =
+      [chat.firstName, chat.lastName].filter(Boolean).join(" ") ||
+      chat.guestName ||
+      "Guest";
     const lines = [
       "— Live chat ended —",
       `Ended by: ${who === "guest" ? "Guest" : "Agent"}`,
-      `Guest name: ${chat.guestName || "Guest"}`,
+      `Guest name: ${fullName}`,
+      chat.firstName ? `First name: ${chat.firstName}` : null,
+      chat.lastName ? `Last name: ${chat.lastName}` : null,
+      chat.email || chat.guestContact
+        ? `Email: ${chat.email || chat.guestContact}`
+        : null,
       chat.need ? `What they needed: ${chat.need}` : null,
       chat.topic ? `Topic: ${chat.topic}` : null,
       `Chat ID: ${chat.id}`,
@@ -622,14 +645,32 @@
 
   function saveChatToInbox(chat, who) {
     if (!window.AlmaNotify || !chat) return;
+    // Avoid duplicate inbox rows if both guest and agent devices close the same chat
+    const inboxId = `live_end_${chat.id}`;
+    try {
+      const existing = window.AlmaNotify.loadInbox() || [];
+      if (existing.some((i) => i.id === inboxId || i.chatId === chat.id)) return;
+    } catch {
+      /* ignore */
+    }
     const transcript = formatChatTranscript(chat, who);
+    const fullName =
+      [chat.firstName, chat.lastName].filter(Boolean).join(" ") ||
+      chat.guestName ||
+      "Guest";
     window.AlmaNotify
       .notifyStaff({
+        id: inboxId,
+        chatId: chat.id,
         type: "live_chat_ended",
-        name: chat.guestName || "Guest",
-        contact: chat.guestContact || "(live website chat)",
+        name: fullName,
+        firstName: chat.firstName || "",
+        lastName: chat.lastName || "",
+        contact: chat.email || chat.guestContact || "",
+        email: chat.email || chat.guestContact || "",
         topic: chat.topic || "live_chat",
         message: transcript,
+        channel: "live_chat",
       })
       .catch(() => {
         /* ignore */

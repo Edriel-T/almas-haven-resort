@@ -261,8 +261,27 @@
   let liveChatId = null;
   let livePollTimer = null;
   let lastLiveMsgCount = 0;
-  let intakeName = "";
+  let intakeFirstName = "";
+  let intakeLastName = "";
+  let intakeEmail = "";
   let intakeNeed = "";
+
+  function intakeFullName() {
+    return [intakeFirstName, intakeLastName].filter(Boolean).join(" ").trim() || "Guest";
+  }
+
+  function isValidEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || "").trim());
+  }
+
+  function isIntakeMode() {
+    return (
+      mode === "ask_first_name" ||
+      mode === "ask_last_name" ||
+      mode === "ask_email" ||
+      mode === "ask_need"
+    );
+  }
 
   function el(tag, className, html) {
     const node = document.createElement(tag);
@@ -390,7 +409,7 @@
 
   function updateLiveButtons() {
     const inLive = mode === "live" || mode === "queued";
-    const inSetup = mode === "ask_name" || mode === "ask_need";
+    const inSetup = isIntakeMode();
     const showEnd = inLive || inSetup;
     if (endLiveBtn) {
       endLiveBtn.hidden = !showEnd;
@@ -419,15 +438,25 @@
       statusEl.innerHTML =
         '<span class="status-dot agent"></span> Waiting in queue for an agent…';
       if (inputEl) inputEl.placeholder = "Optional note while you wait…";
-    } else if (mode === "ask_name") {
+    } else if (mode === "ask_first_name") {
       modeLabel.textContent = "Mode: Live agent setup";
       statusEl.innerHTML =
-        '<span class="status-dot agent"></span> Step 1 of 2 · Your name';
-      if (inputEl) inputEl.placeholder = "Type your name…";
+        '<span class="status-dot agent"></span> Step 1 of 4 · First name';
+      if (inputEl) inputEl.placeholder = "Your first name";
+    } else if (mode === "ask_last_name") {
+      modeLabel.textContent = "Mode: Live agent setup";
+      statusEl.innerHTML =
+        '<span class="status-dot agent"></span> Step 2 of 4 · Last name';
+      if (inputEl) inputEl.placeholder = "Your last name";
+    } else if (mode === "ask_email") {
+      modeLabel.textContent = "Mode: Live agent setup";
+      statusEl.innerHTML =
+        '<span class="status-dot agent"></span> Step 3 of 4 · Email';
+      if (inputEl) inputEl.placeholder = "your@email.com";
     } else if (mode === "ask_need") {
       modeLabel.textContent = "Mode: Live agent setup";
       statusEl.innerHTML =
-        '<span class="status-dot agent"></span> Step 2 of 2 · What you need';
+        '<span class="status-dot agent"></span> Step 4 of 4 · How we can help';
       if (inputEl) inputEl.placeholder = "What do you need help with?";
     } else if (mode === "bot") {
       modeLabel.textContent = "Mode: FAQ Bot";
@@ -443,16 +472,22 @@
     updateLiveButtons();
   }
 
+  function clearIntake() {
+    intakeFirstName = "";
+    intakeLastName = "";
+    intakeEmail = "";
+    intakeNeed = "";
+  }
+
   function endLiveChatByUser() {
-    // Cancel during name/need setup (not yet connected)
-    if (mode === "ask_name" || mode === "ask_need") {
+    // Cancel during setup (not yet connected)
+    if (isIntakeMode()) {
       const ok = confirm("Cancel the live agent request?");
       if (!ok) return;
       liveChatId = null;
       lastLiveMsgCount = 0;
       stopLivePoll();
-      intakeName = "";
-      intakeNeed = "";
+      clearIntake();
       setMode("bot");
       appendMessage(
         "system",
@@ -476,8 +511,7 @@
     liveChatId = null;
     lastLiveMsgCount = 0;
     stopLivePoll();
-    intakeName = "";
-    intakeNeed = "";
+    clearIntake();
     setMode("bot");
     appendMessage(
       "system",
@@ -546,8 +580,12 @@
 
   function finishIntakeAndConnect() {
     if (!window.AlmaLiveAgent) return;
+    const fullName = intakeFullName();
     const result = window.AlmaLiveAgent.joinQueue({
-      name: intakeName,
+      name: fullName,
+      firstName: intakeFirstName,
+      lastName: intakeLastName,
+      email: intakeEmail,
       need: intakeNeed,
       topic: "live_help",
     });
@@ -559,7 +597,7 @@
       setMode("live");
       appendMessage(
         "system",
-        `✓ ${intakeName}, you're connected. Agent: ${window.AlmaLiveAgent.getAgentName()}. They can see what you need.\n\nYou can end this chat anytime with the red “End live chat” button above, or “End live agent chat” below.`
+        `✓ ${fullName}, you're connected. Agent: ${window.AlmaLiveAgent.getAgentName()}. They can see your details and request.\n\nYou can end this chat anytime with “End live chat”.`
       );
       if (window.AlmaUI?.toast) {
         window.AlmaUI.toast("Connected to live agent");
@@ -569,7 +607,7 @@
       const pos = result.position || window.AlmaLiveAgent.queuePosition(liveChatId) || 1;
       appendMessage(
         "system",
-        `✓ Thanks ${intakeName}! You're #${pos} in the queue. Please wait — we'll connect you when an agent is free.\n\nYou can leave the queue anytime with “End live chat”.`
+        `✓ Thanks ${fullName}! You're #${pos} in the queue. Please wait — we'll connect you when an agent is free.\n\nYou can leave the queue anytime with “End live chat”.`
       );
       if (window.AlmaUI?.toast) {
         window.AlmaUI.toast(`You're #${pos} in the live agent queue`);
@@ -579,11 +617,12 @@
   }
 
   async function beginLiveIntake() {
-    intakeName = "";
-    intakeNeed = "";
+    clearIntake();
     openPanel();
-    setMode("ask_name");
-    await botReply("Sure — I'll connect you to a live agent. First, what is your name?");
+    setMode("ask_first_name");
+    await botReply(
+      "Sure — I'll connect you to a live agent. First, what is your first name?"
+    );
   }
 
   async function requestLiveAgent() {
@@ -657,17 +696,46 @@
     appendMessage("user", trimmed);
     inputEl.value = "";
 
-    // Step 1: collect name
-    if (mode === "ask_name") {
-      intakeName = trimmed.replace(/\s+/g, " ").slice(0, 60);
-      setMode("ask_need");
+    // Live agent intake: first name → last name → email → need
+    if (mode === "ask_first_name") {
+      intakeFirstName = trimmed.replace(/\s+/g, " ").slice(0, 40);
+      if (intakeFirstName.length < 1) {
+        await botReply("Please enter your first name.");
+        return;
+      }
+      setMode("ask_last_name");
+      await botReply(`Thanks, ${intakeFirstName}. What is your last name?`);
+      return;
+    }
+
+    if (mode === "ask_last_name") {
+      intakeLastName = trimmed.replace(/\s+/g, " ").slice(0, 40);
+      if (intakeLastName.length < 1) {
+        await botReply("Please enter your last name.");
+        return;
+      }
+      setMode("ask_email");
       await botReply(
-        `Thanks, ${intakeName}! What do you need help with? (e.g. booking dates, room type, directions)`
+        `Thanks, ${intakeFullName()}. What is your email address?`
       );
       return;
     }
 
-    // Step 2: collect need → join queue / connect
+    if (mode === "ask_email") {
+      if (!isValidEmail(trimmed)) {
+        await botReply(
+          "That doesn't look like a valid email. Please enter an email like name@example.com."
+        );
+        return;
+      }
+      intakeEmail = trimmed.trim().slice(0, 120);
+      setMode("ask_need");
+      await botReply(
+        `Thanks! How can we help you today? (e.g. booking dates, room type, directions)`
+      );
+      return;
+    }
+
     if (mode === "ask_need") {
       intakeNeed = trimmed.slice(0, 500);
       if (!agentOnline()) {

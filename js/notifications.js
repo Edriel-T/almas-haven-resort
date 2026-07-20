@@ -1,10 +1,13 @@
 /**
  * Notification + inbox system for reservations & live-agent requests.
- * Stores locally for the Staff Inbox page, and optionally posts to webhooks / Formspree / WhatsApp.
+ * Stores locally + syncs to Firestore when available (so admin sees ended chats from any device).
  */
 (function () {
   const cfg = () => window.ALMA_CONFIG || {};
   const channelName = "almas-haven-inbox";
+  const FS_INBOX = "inbox";
+  let cloudListening = false;
+  let applyingRemote = false;
 
   function loadInbox() {
     try {
@@ -15,16 +18,93 @@
     }
   }
 
-  function saveInbox(items) {
-    localStorage.setItem(cfg().storageKey || "almas_haven_inbox_v1", JSON.stringify(items));
+  function saveInbox(items, options) {
+    const list = Array.isArray(items) ? items.slice(0, 200) : [];
+    localStorage.setItem(cfg().storageKey || "almas_haven_inbox_v1", JSON.stringify(list));
     try {
       const bc = new BroadcastChannel(channelName);
-      bc.postMessage({ type: "inbox-updated", items });
+      bc.postMessage({ type: "inbox-updated", items: list });
       bc.close();
     } catch {
       /* BroadcastChannel not available */
     }
-    window.dispatchEvent(new CustomEvent("alma:inbox-updated", { detail: { items } }));
+    window.dispatchEvent(new CustomEvent("alma:inbox-updated", { detail: { items: list } }));
+    if (!applyingRemote && !(options && options.skipCloud)) {
+      pushInboxCloud(list);
+    }
+  }
+
+  function cloudReady() {
+    return (
+      window.AlmaCloud &&
+      window.AlmaCloud.isConfigured() &&
+      typeof firebase !== "undefined" &&
+      firebase.firestore
+    );
+  }
+
+  async function ensureAuth() {
+    if (!cloudReady()) return false;
+    try {
+      await window.AlmaCloud.init();
+      if (!firebase.apps.length) return false;
+      if (firebase.auth().currentUser) return true;
+      if (window.AlmaCloud.waitForAuth) {
+        const u = await window.AlmaCloud.waitForAuth(2000);
+        if (u) return true;
+      }
+      await firebase.auth().signInAnonymously();
+      return !!firebase.auth().currentUser;
+    } catch {
+      return false;
+    }
+  }
+
+  function pushInboxCloud(items) {
+    if (!cloudReady()) return;
+    ensureAuth().then((ok) => {
+      if (!ok) return;
+      firebase
+        .firestore()
+        .collection("almaHaven")
+        .doc(FS_INBOX)
+        .set({
+          data: items,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        })
+        .catch((err) => console.warn("[Inbox] cloud push:", err.message));
+    });
+  }
+
+  async function startCloudSync() {
+    if (cloudListening || !cloudReady()) return;
+    try {
+      await window.AlmaCloud.init();
+      if (!firebase.apps.length) return;
+      cloudListening = true;
+      firebase
+        .firestore()
+        .collection("almaHaven")
+        .doc(FS_INBOX)
+        .onSnapshot(
+          (snap) => {
+            if (!snap.exists) return;
+            const payload = snap.data();
+            const data = payload && payload.data !== undefined ? payload.data : payload;
+            if (!Array.isArray(data)) return;
+            applyingRemote = true;
+            try {
+              saveInbox(data, { skipCloud: true });
+            } finally {
+              applyingRemote = false;
+            }
+          },
+          (err) => console.warn("[Inbox] listener:", err.message)
+        );
+    } catch (err) {
+      console.warn("[Inbox] cloud sync failed:", err && err.message);
+      cloudListening = false;
+    }
   }
 
   function uid() {
@@ -139,10 +219,14 @@
    */
   async function notifyStaff(data) {
     const item = {
-      id: uid(),
+      id: data.id || uid(),
+      chatId: data.chatId || "",
       type: data.type || "message",
       name: data.name || "",
-      contact: data.contact || "",
+      firstName: data.firstName || "",
+      lastName: data.lastName || "",
+      contact: data.contact || data.email || "",
+      email: data.email || data.contact || "",
       topic: data.topic || "",
       message: data.message || "",
       checkin: data.checkin || "",
@@ -155,11 +239,21 @@
     };
 
     const inbox = loadInbox();
+    // Skip exact id duplicates (e.g. same ended chat saved twice)
+    if (inbox.some((i) => i.id === item.id)) {
+      return { item, skipped: true };
+    }
     inbox.unshift(item);
     saveInbox(inbox.slice(0, 200));
 
+    const title =
+      item.type === "reservation"
+        ? "New reservation request"
+        : item.type === "live_chat_ended"
+          ? "Live chat ended"
+          : "New inbox message";
     showBrowserNotification(
-      item.type === "reservation" ? "New reservation request" : "Live agent requested",
+      title,
       `${item.name || "Guest"} — ${item.topic || item.type}${item.contact ? ` · ${item.contact}` : ""}`
     );
     playAlertSound();
@@ -195,6 +289,20 @@
     return loadInbox().filter((i) => !i.read).length;
   }
 
+  // Boot cloud inbox when Firebase is available
+  function bootCloud() {
+    if (!cloudReady()) {
+      setTimeout(bootCloud, 500);
+      return;
+    }
+    startCloudSync();
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootCloud);
+  } else {
+    bootCloud();
+  }
+
   window.AlmaNotify = {
     loadInbox,
     saveInbox,
@@ -206,5 +314,6 @@
     requestBrowserPermission,
     openWhatsApp,
     channelName,
+    startCloudSync,
   };
 })();

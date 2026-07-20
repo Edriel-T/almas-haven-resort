@@ -474,10 +474,11 @@
             ? '<em class="live-badge live-badge--active">Active</em>'
             : `<em class="live-badge live-badge--queue">Queue #${pos}</em>`;
         const need = c.need ? c.need.slice(0, 40) : "—";
+        const email = c.email || c.guestContact || "";
         return `
         <button type="button" class="live-chat-item ${c.id === activeLiveChatId ? "is-active" : ""}" data-live-id="${c.id}">
           <strong>${escapeHtmlAdmin(c.guestName || "Guest")} ${badge}</strong>
-          <span>${escapeHtmlAdmin(need)}</span>
+          <span>${escapeHtmlAdmin(email || need)}</span>
         </button>`;
       })
       .join("");
@@ -543,8 +544,18 @@
         : chat.status;
     head.textContent = `${chat.guestName || "Guest"} · ${statusLabel}`;
     if (needEl) {
-      needEl.hidden = !chat.need;
-      needEl.textContent = chat.need ? `Need: ${chat.need}` : "";
+      const bits = [];
+      if (chat.firstName || chat.lastName) {
+        bits.push(
+          `Name: ${[chat.firstName, chat.lastName].filter(Boolean).join(" ") || chat.guestName || "Guest"}`
+        );
+      }
+      if (chat.email || chat.guestContact) {
+        bits.push(`Email: ${chat.email || chat.guestContact}`);
+      }
+      if (chat.need) bits.push(`Need: ${chat.need}`);
+      needEl.hidden = !bits.length;
+      needEl.textContent = bits.join(" · ");
     }
     form.hidden = isClosed;
     // Accept only for queued guests — never when already active or closed
@@ -1196,7 +1207,17 @@
       list.innerHTML = items
         .map((item) => {
           const details = [
-            item.contact ? `<strong>Contact:</strong> ${escapeHtml(item.contact)}` : "",
+            item.firstName || item.lastName
+              ? `<strong>Name:</strong> ${escapeHtml(
+                  [item.firstName, item.lastName].filter(Boolean).join(" ") || item.name || "Guest"
+                )}`
+              : "",
+            item.email || item.contact
+              ? `<strong>Email:</strong> ${escapeHtml(item.email || item.contact)}`
+              : "",
+            item.contact && item.contact !== item.email
+              ? `<strong>Contact:</strong> ${escapeHtml(item.contact)}`
+              : "",
             item.roomType ? `<strong>Room:</strong> ${escapeHtml(roomLabel(item.roomType))}` : "",
             item.checkin
               ? `<strong>Stay:</strong> ${escapeHtml(item.checkin)} → ${escapeHtml(item.checkout || "?")}`
@@ -1214,7 +1235,7 @@
               <span class="inbox-meta">${formatWhen(item.createdAt)}</span>
             </header>
             <div class="inbox-meta">${details}</div>
-            <p>${escapeHtml(item.message || "")}</p>
+            <p class="inbox-message">${escapeHtml(item.message || "")}</p>
             ${
               item.read
                 ? ""
