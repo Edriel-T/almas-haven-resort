@@ -3631,6 +3631,10 @@ body.modal-open {
   gap: 0.45rem;
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-bottom: 0.25rem;
 }
 
 .admin-tab {
@@ -3650,14 +3654,6 @@ body.modal-open {
   background: var(--ink);
   border-color: var(--ink);
   color: #f4efe6;
-}
-
-.admin-tabs {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  flex-wrap: nowrap;
-  padding-bottom: 0.25rem;
 }
 
 .admin-panel[hidden] {
