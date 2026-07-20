@@ -1595,44 +1595,449 @@ p:last-child {
   display: none !important;
 }
 
-.admin-photo-preview {
+.admin-photo-preview,
+.admin-photo-selected,
+.admin-photo-library {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.85rem;
+  margin: 0.75rem 0 1.25rem;
 }
 
-.admin-photo-thumb {
+.admin-photo-card {
+  position: relative;
   margin: 0;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--bg-2);
+  padding: 0;
+  text-align: left;
+  cursor: default;
+  font: inherit;
+  color: inherit;
+  width: 100%;
 }
 
-.admin-photo-thumb img {
+button.admin-photo-pick {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+button.admin-photo-pick:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--sea);
+}
+
+button.admin-photo-pick.is-in-list {
+  border-color: var(--sea);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sea) 35%, transparent);
+}
+
+.admin-photo-card img {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
   display: block;
+  background: #ddd;
 }
 
-.admin-photo-thumb figcaption {
-  font-size: 0.65rem;
-  padding: 0.35rem 0.4rem;
+.admin-photo-card figcaption {
+  font-size: 0.72rem;
+  padding: 0.4rem 0.5rem;
   color: var(--muted);
-  word-break: break-all;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.admin-photo-thumb.is-broken {
-  outline: 2px solid var(--red);
+.admin-photo-card.is-broken {
+  outline: 2px solid var(--red, #c43228);
 }
 
-#photoPathsInput {
-  width: 100%;
-  min-height: 140px;
-  font-family: ui-monospace, monospace;
+.admin-photo-remove {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.admin-photo-remove:hover {
+  background: #c43228;
+}
+
+.admin-subhead {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 1.25rem 0 0.35rem;
+  color: var(--sea-deep);
+}
+
+.admin-upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.admin-cal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 1.1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-cal-layout--wide {
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.3fr);
+}
+
+.cal-day.partial {
+  background: #fff3d6;
+  color: #8a5a00;
+  border-color: #e6c06a;
+}
+
+.leg.partial {
+  background: #e6c06a !important;
+}
+
+.admin-status-pill.is-partial {
+  background: #fff3d6;
+  color: #8a5a00;
+}
+
+.admin-unit-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.75rem 0;
+  max-height: min(55vh, 520px);
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.admin-unit-floor {
+  margin: 0.65rem 0 0.25rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.admin-unit-card {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  background: var(--bg-2, #f7f8f6);
+}
+
+.admin-unit-card.is-occupied {
+  border-color: #f0b4ae;
+  background: #fff7f6;
+}
+
+.admin-unit-card.is-free {
+  border-color: #b7e4c7;
+  background: #f4fcf7;
+}
+
+.admin-unit-card__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-unit-card__main strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--sea-deep);
+  margin-bottom: 0.2rem;
+}
+
+.admin-unit-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  margin-bottom: 0.35rem;
+}
+
+.admin-unit-badge.free {
+  background: #d8f5e5;
+  color: #0d6b3a;
+}
+
+.admin-unit-badge.occupied {
+  background: #fde0dd;
+  color: #9b241c;
+}
+
+.admin-unit-guest,
+.admin-unit-dates {
+  margin: 0.15rem 0;
+  font-size: 0.88rem;
+}
+
+.admin-assign-box {
+  margin-top: 0.85rem;
+  padding: 0.9rem;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.admin-assign-box h4 {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-display);
+  color: var(--sea-deep);
+}
+
+.admin-assign-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-assign-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.65rem;
   font-size: 0.85rem;
+}
+
+.public-cal-nav {
+  width: 100%;
+  justify-content: center;
+}
+
+.public-day-detail {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.public-floor-label {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.public-type-block {
+  margin-bottom: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-2, #f7f8f6);
+}
+
+.public-type-head {
+  display: grid;
+  gap: 0.15rem;
+  margin-bottom: 0.4rem;
+}
+
+.public-type-head strong {
+  color: var(--sea-deep);
+}
+
+.public-type-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.public-unit-status {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.public-unit-status li {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.public-unit-status .dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.public-unit-status li.is-free .dot {
+  background: #1a9a52;
+}
+
+.public-unit-status li.is-busy .dot {
+  background: #c43228;
+}
+
+.public-cal-grid .cal-day {
+  cursor: pointer;
+  border: none;
+  font: inherit;
+}
+
+.public-cal-grid .cal-day.is-selected {
+  outline: 2px solid var(--sea-deep, #0b4f6c);
+  outline-offset: 1px;
+}
+
+.admin-day-panel {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.admin-day-panel h3 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 0 0 0.25rem;
+  color: var(--sea-deep);
+}
+
+.admin-day-status {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.admin-status-pill {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.admin-status-pill.is-open {
+  background: #d8f5e5;
+  color: #0d6b3a;
+}
+
+.admin-status-pill.is-closed {
+  background: #fde0dd;
+  color: #9b241c;
+}
+
+.admin-muted {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.85em;
+}
+
+.admin-cal-grid .cal-day {
+  position: relative;
+}
+
+.admin-cal-grid .cal-day.is-selected {
+  outline: 2px solid var(--sea-deep, #0b4f6c);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+.admin-cal-grid .cal-day.has-note .cal-note-dot {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e6a817;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.leg.admin-note-leg {
+  background: #e6a817 !important;
+  border-radius: 50%;
+  width: 0.65rem;
+  height: 0.65rem;
+}
+
+.admin-price-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.admin-price-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px) auto;
+  gap: 0.85rem;
+  align-items: end;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.admin-price-card__info {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-price-card__info strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--sea-deep);
+}
+
+.admin-price-card__info span {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.admin-price-input input {
+  width: 100%;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .admin-cal-layout,
+  .admin-cal-layout--wide {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-day-panel {
+    position: static;
+  }
+
+  .admin-price-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-assign-dates {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {

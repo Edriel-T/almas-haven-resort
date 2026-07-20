@@ -217,11 +217,14 @@
     if (window.AlmaReveal) window.AlmaReveal.refresh();
   }
 
-  window.addEventListener("alma:room-photos-updated", () => {
+  function refreshRoomGrids() {
     document.querySelectorAll(".room-grid").forEach((grid) => {
       if (grid.id) renderInto(grid);
     });
-  });
+  }
+
+  window.addEventListener("alma:room-photos-updated", refreshRoomGrids);
+  window.addEventListener("alma:room-prices-updated", refreshRoomGrids);
 
   window.AlmaRooms = {
     cardHTML,

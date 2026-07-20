@@ -19,7 +19,7 @@
     <div class="admin-login-card">
       <p class="lp-kicker">Private</p>
       <h1>Admin access</h1>
-      <p class="section-lead">Enter the password to manage availability and room photos.</p>
+      <p class="section-lead">Enter the password to manage availability, prices, photos, and live chat.</p>
       <form id="adminLoginForm">
         <label>
           Password
@@ -39,7 +39,7 @@
       <div class="container">
         <div>
           <h1>Admin</h1>
-          <p>Availability · live chat · room photos</p>
+          <p>Availability · prices · photos · live chat</p>
         </div>
         <div class="admin-actions">
           <label class="admin-online-toggle admin-btn-light">
@@ -57,6 +57,7 @@
         <div class="admin-tabs" role="tablist">
           <button type="button" class="admin-tab active" data-tab="live" role="tab" aria-selected="true">Live chat <span class="tab-count" id="tabLive"></span></button>
           <button type="button" class="admin-tab" data-tab="availability" role="tab" aria-selected="false">Availability</button>
+          <button type="button" class="admin-tab" data-tab="prices" role="tab" aria-selected="false">Prices</button>
           <button type="button" class="admin-tab" data-tab="photos" role="tab" aria-selected="false">Room photos</button>
           <button type="button" class="admin-tab" data-tab="inbox" role="tab" aria-selected="false">Inbox <span class="tab-count" id="tabUnread"></span></button>
         </div>
@@ -85,14 +86,10 @@
           </div>
         </section>
 
-        <!-- Availability: mark dates not available -->
+        <!-- Availability: click date → all room units free/occupied -->
         <section id="panel-availability" class="admin-panel" hidden>
           <div class="admin-cal-toolbar">
-            <label class="admin-field">
-              Room type
-              <select id="adminRoomSelect"></select>
-            </label>
-            <div class="admin-cal-nav">
+            <div class="admin-cal-nav" style="width:100%;justify-content:center">
               <button type="button" class="btn btn-ghost" id="adminCalPrev">‹ Prev</button>
               <strong id="adminCalLabel"></strong>
               <button type="button" class="btn btn-ghost" id="adminCalNext">Next ›</button>
@@ -100,47 +97,126 @@
           </div>
 
           <p class="section-lead">
-            Click a date to toggle availability (with confirmation):
-            <strong style="color:#1a9a52">green</strong> = available ·
-            <strong style="color:#c43228">red</strong> = not available.
-            Click a red date again to undo and make it green.
+            Click a date to see <strong>every room unit</strong> (e.g. Family Room · Room 1, Room 2…).
+            Mark a free room as occupied with guest name, check-in and check-out.
+            <strong style="color:#1a9a52">green</strong> = all free ·
+            <strong style="color:#c9891a">amber</strong> = some occupied ·
+            <strong style="color:#c43228">red</strong> = fully booked.
+            Guest names and notes are <strong>admin only</strong>.
           </p>
 
           <div class="booking-legend admin-legend">
-            <span><i class="leg available"></i> Available — click to close</span>
-            <span><i class="leg unavailable"></i> Not available — click to reopen</span>
+            <span><i class="leg available"></i> All free</span>
+            <span><i class="leg partial"></i> Some occupied</span>
+            <span><i class="leg unavailable"></i> Fully booked</span>
+            <span><i class="leg admin-note-leg"></i> Day note</span>
           </div>
 
-          <div class="admin-cal-wrap">
-            <div class="cal-grid admin-cal-grid" id="adminCalGrid"></div>
+          <div class="admin-cal-layout admin-cal-layout--wide">
+            <div class="admin-cal-wrap">
+              <div class="cal-grid admin-cal-grid" id="adminCalGrid"></div>
+            </div>
+
+            <aside class="admin-day-panel admin-day-panel--wide" id="adminDayPanel">
+              <h3 id="adminDayTitle">Select a date</h3>
+              <p class="lp-note" id="adminDaySub">Click a day to view room occupancy.</p>
+              <div id="adminDayControls" hidden>
+                <div class="admin-day-status" id="adminDayStatus"></div>
+                <div class="admin-unit-list" id="adminUnitList"></div>
+
+                <div class="admin-assign-box" id="adminAssignBox" hidden>
+                  <h4 id="adminAssignTitle">Assign guest</h4>
+                  <form id="adminAssignForm" class="admin-assign-form">
+                    <input type="hidden" id="assignRoomType" />
+                    <input type="hidden" id="assignUnit" />
+                    <input type="hidden" id="assignStayId" />
+                    <label class="admin-field">
+                      Guest name
+                      <input type="text" id="assignGuest" required placeholder="Full name" autocomplete="name" />
+                    </label>
+                    <div class="admin-assign-dates">
+                      <label class="admin-field">
+                        Check-in
+                        <input type="date" id="assignCheckin" required />
+                      </label>
+                      <label class="admin-field">
+                        Check-out
+                        <input type="date" id="assignCheckout" required />
+                      </label>
+                    </div>
+                    <label class="admin-field">
+                      Private note <span class="admin-muted">(optional)</span>
+                      <input type="text" id="assignNote" placeholder="Deposit, FB name, etc." />
+                    </label>
+                    <div class="admin-actions" style="margin-top:0.5rem;flex-wrap:wrap">
+                      <button type="submit" class="btn btn-primary" id="assignSave">Save stay</button>
+                      <button type="button" class="btn btn-ghost" id="assignCancel">Cancel</button>
+                      <button type="button" class="btn btn-ghost" id="assignRemove" hidden>Remove stay</button>
+                    </div>
+                  </form>
+                </div>
+
+                <label class="admin-field" style="margin-top:1rem">
+                  Private day note <span class="admin-muted">(only you see this)</span>
+                  <textarea id="adminDayNote" rows="2" placeholder="e.g. Full house event · hold for walk-ins"></textarea>
+                </label>
+                <div class="admin-actions" style="margin-top:0.5rem;flex-wrap:wrap">
+                  <button type="button" class="btn btn-ghost" id="adminDayNoteSave">Save day note</button>
+                  <button type="button" class="btn btn-ghost" id="adminDayNoteClear">Clear note</button>
+                </div>
+              </div>
+            </aside>
           </div>
 
           <div class="admin-actions" style="margin-top:1.25rem;flex-wrap:wrap">
-            <button type="button" class="btn btn-ghost" id="exportAvail">Export JSON</button>
+            <button type="button" class="btn btn-ghost" id="exportAvail">Export stays</button>
             <label class="btn btn-ghost" style="cursor:pointer">
-              Import JSON
+              Import stays
               <input type="file" id="importAvail" accept="application/json,.json" hidden />
             </label>
-            <button type="button" class="btn btn-primary" id="clearAvail">Clear all marks</button>
+            <button type="button" class="btn btn-primary" id="clearAvail">Clear all stays</button>
+          </div>
+        </section>
+
+        <!-- Room prices -->
+        <section id="panel-prices" class="admin-panel" hidden>
+          <p class="section-lead">
+            Update nightly rates shown on the website (room cards, booking, chat).
+            Prices are saved in this browser and apply immediately for visitors on the same device/browser data.
+          </p>
+          <div class="admin-price-list" id="adminPriceList"></div>
+          <div class="admin-actions" style="margin-top:1rem;flex-wrap:wrap">
+            <button type="button" class="btn btn-primary" id="priceSaveAll">Save all prices</button>
+            <button type="button" class="btn btn-ghost" id="priceResetAll">Reset all to defaults</button>
           </div>
         </section>
 
         <!-- Room photos for clickable room cards -->
         <section id="panel-photos" class="admin-panel" hidden>
           <p class="section-lead">
-            Photos shown when a guest clicks a room card. List image paths below (one per line),
-            for example <code>Images/Couple room.jpg</code>. Leave empty to use the default photos.
+            Choose photos for each room. Guests see these when they open a room card.
+            Click a library photo to add it · click × on a selected photo to remove it.
           </p>
           <label class="admin-field" style="max-width:420px;margin-bottom:1rem">
             Room
             <select id="photoRoomSelect"></select>
           </label>
-          <label class="admin-field">
-            Image paths (one per line)
-            <textarea id="photoPathsInput" rows="6" placeholder="Images/Couple room.jpg&#10;Images/Family room - 4pax.jpg"></textarea>
-          </label>
           <p class="lp-note" id="photoDefaultsHint"></p>
-          <div class="admin-photo-preview" id="photoPreview"></div>
+
+          <h3 class="admin-subhead">Selected photos for this room</h3>
+          <div class="admin-photo-selected" id="photoSelected"></div>
+
+          <h3 class="admin-subhead">Photo library — click to add</h3>
+          <div class="admin-photo-library" id="photoLibrary"></div>
+
+          <div class="admin-upload-row">
+            <label class="btn btn-ghost" style="cursor:pointer">
+              Upload image from device
+              <input type="file" id="photoUpload" accept="image/*" multiple hidden />
+            </label>
+            <span class="lp-note">Uploads stay in this browser only (for previews &amp; this site session).</span>
+          </div>
+
           <div class="admin-actions" style="margin-top:1rem;flex-wrap:wrap">
             <button type="button" class="btn btn-primary" id="photoSave">Save photos for room</button>
             <button type="button" class="btn btn-ghost" id="photoReset">Reset to defaults</button>
@@ -168,7 +244,9 @@
 
   <script src="js/config.js"></script>
   <script src="js/rooms-config.js"></script>
+  <script src="js/room-prices.js"></script>
   <script src="js/room-photos.js"></script>
+  <script src="js/admin-notes.js"></script>
   <script src="js/live-agent.js"></script>
   <script src="js/availability.js"></script>
   <script src="js/notifications.js"></script>

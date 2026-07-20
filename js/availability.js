@@ -1,19 +1,25 @@
 /**
- * Room availability by date (per room type).
- * Status: available (default) | booked | blocked | pending
- * Editable from admin panel; read by booking calendar.
+ * Room occupancy by unit + stay (guest, check-in, check-out).
+ * Admin manages stays; public calendar shows free/busy without guest names.
+ *
+ * A unit is occupied on date D when checkin <= D < checkout (hotel-style).
  */
 (function () {
-  const KEY = "almas_haven_availability_v1";
+  const KEY = "almas_haven_stays_v1";
+  const LEGACY_KEY = "almas_haven_availability_v1";
   const channelName = "almas-haven-availability";
 
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      return raw ? JSON.parse(raw) : {};
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.stays)) return data;
+      }
     } catch {
-      return {};
+      /* ignore */
     }
+    return { stays: [] };
   }
 
   function save(data) {
@@ -28,56 +34,51 @@
     window.dispatchEvent(new CustomEvent("alma:availability-updated"));
   }
 
-  function getStatus(roomId, dateStr) {
-    const data = load();
-    return (data[roomId] && data[roomId][dateStr]) || "available";
+  function rooms() {
+    return (window.ALMA_CONFIG && window.ALMA_CONFIG.rooms) || [];
   }
 
-  function setStatus(roomId, dateStr, status) {
-    const data = load();
-    if (!data[roomId]) data[roomId] = {};
-    if (status === "available") {
-      delete data[roomId][dateStr];
-      if (!Object.keys(data[roomId]).length) delete data[roomId];
-    } else {
-      data[roomId][dateStr] = status;
-    }
-    save(data);
+  function roomById(id) {
+    return rooms().find((r) => r.id === id) || null;
   }
 
-  function setRange(roomId, startStr, endStr, status, options) {
-    const exclusiveEnd = options && options.exclusiveEnd;
-    const dates = datesBetween(startStr, endStr, exclusiveEnd);
-    dates.forEach((d) => setStatus(roomId, d, status));
-  }
-
-  function isDateOpen(roomId, dateStr) {
-    const s = getStatus(roomId, dateStr);
-    return s === "available" || s === "pending";
-  }
-
-  /** Nights: check-in inclusive, check-out exclusive (hotel style) */
-  function isRangeOpen(roomId, checkin, checkout) {
-    if (!checkin || !checkout || checkout <= checkin) return false;
-    const nights = datesBetween(checkin, checkout, true);
-    return nights.every((d) => isDateOpen(roomId, d));
-  }
-
-  function getRangeConflicts(roomId, checkin, checkout) {
-    if (!checkin || !checkout || checkout <= checkin) return [];
-    return datesBetween(checkin, checkout, true).filter((d) => !isDateOpen(roomId, d));
-  }
-
-  function datesBetween(startStr, endStr, exclusiveEnd) {
+  /** Expand room types into numbered units (Room 1, Room 2, …) */
+  function getAllUnits() {
     const out = [];
-    const cur = parseYMD(startStr);
-    const end = parseYMD(endStr);
-    if (!cur || !end) return out;
-    while (exclusiveEnd ? cur < end : cur <= end) {
-      out.push(formatYMD(cur));
-      cur.setDate(cur.getDate() + 1);
-    }
+    rooms().forEach((r) => {
+      const n = Math.max(1, Number(r.count) || 1);
+      for (let u = 1; u <= n; u++) {
+        out.push({
+          roomTypeId: r.id,
+          unit: u,
+          unitKey: `${r.id}#${u}`,
+          floor: r.floor || "",
+          name: r.name || r.id,
+          pax: r.pax,
+          price: r.price,
+          label: n === 1 ? r.name : `${r.name} · Room ${u}`,
+          shortLabel: n === 1 ? "Room 1" : `Room ${u}`,
+          count: n,
+        });
+      }
+    });
     return out;
+  }
+
+  function getUnitsForType(roomTypeId) {
+    return getAllUnits().filter((u) => u.roomTypeId === roomTypeId);
+  }
+
+  function listStays() {
+    return load().stays.slice();
+  }
+
+  function getStay(id) {
+    return load().stays.find((s) => s.id === id) || null;
+  }
+
+  function uid() {
+    return `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
   function parseYMD(s) {
@@ -97,10 +98,200 @@
     return formatYMD(new Date());
   }
 
+  function datesBetween(startStr, endStr, exclusiveEnd) {
+    const out = [];
+    const cur = parseYMD(startStr);
+    const end = parseYMD(endStr);
+    if (!cur || !end) return out;
+    while (exclusiveEnd ? cur < end : cur <= end) {
+      out.push(formatYMD(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return out;
+  }
+
+  /** Stay covers night of dateStr if checkin <= dateStr < checkout */
+  function stayCoversDate(stay, dateStr) {
+    if (!stay || !dateStr) return false;
+    return stay.checkin <= dateStr && dateStr < stay.checkout;
+  }
+
+  function staysOverlap(a, b) {
+    // ranges [checkin, checkout) overlap
+    return a.checkin < b.checkout && b.checkin < a.checkout;
+  }
+
+  function findStayForUnitOnDate(roomTypeId, unit, dateStr) {
+    return (
+      load().stays.find(
+        (s) =>
+          s.roomTypeId === roomTypeId &&
+          Number(s.unit) === Number(unit) &&
+          stayCoversDate(s, dateStr)
+      ) || null
+    );
+  }
+
+  function unitConflicts(roomTypeId, unit, checkin, checkout, excludeId) {
+    return load().stays.filter((s) => {
+      if (excludeId && s.id === excludeId) return false;
+      if (s.roomTypeId !== roomTypeId || Number(s.unit) !== Number(unit)) return false;
+      return staysOverlap(s, { checkin, checkout });
+    });
+  }
+
+  function addStay({ roomTypeId, unit, guestName, checkin, checkout, adminNote }) {
+    const name = String(guestName || "").trim();
+    if (!roomTypeId || !unit || !name || !checkin || !checkout) {
+      throw new Error("Missing required stay fields");
+    }
+    if (checkout <= checkin) throw new Error("Check-out must be after check-in");
+    const conflicts = unitConflicts(roomTypeId, unit, checkin, checkout);
+    if (conflicts.length) throw new Error("That room is already booked for overlapping dates");
+
+    const data = load();
+    const stay = {
+      id: uid(),
+      roomTypeId,
+      unit: Number(unit),
+      guestName: name,
+      checkin,
+      checkout,
+      adminNote: String(adminNote || "").trim(),
+      createdAt: new Date().toISOString(),
+    };
+    data.stays.push(stay);
+    save(data);
+    return stay;
+  }
+
+  function updateStay(id, patch) {
+    const data = load();
+    const i = data.stays.findIndex((s) => s.id === id);
+    if (i < 0) throw new Error("Stay not found");
+    const next = { ...data.stays[i], ...patch };
+    next.guestName = String(next.guestName || "").trim();
+    next.adminNote = String(next.adminNote || "").trim();
+    next.unit = Number(next.unit);
+    if (!next.guestName) throw new Error("Guest name required");
+    if (!next.checkin || !next.checkout || next.checkout <= next.checkin) {
+      throw new Error("Invalid dates");
+    }
+    const conflicts = unitConflicts(next.roomTypeId, next.unit, next.checkin, next.checkout, id);
+    if (conflicts.length) throw new Error("That room is already booked for overlapping dates");
+    data.stays[i] = next;
+    save(data);
+    return next;
+  }
+
+  function removeStay(id) {
+    const data = load();
+    data.stays = data.stays.filter((s) => s.id !== id);
+    save(data);
+  }
+
+  /**
+   * Full occupancy snapshot for one calendar date (all units).
+   * Public-safe fields omit nothing sensitive except we flag admin-only guestName.
+   */
+  function getDayOccupancy(dateStr) {
+    const units = getAllUnits();
+    const rows = units.map((u) => {
+      const stay = findStayForUnitOnDate(u.roomTypeId, u.unit, dateStr);
+      return {
+        ...u,
+        occupied: !!stay,
+        stay: stay
+          ? {
+              id: stay.id,
+              guestName: stay.guestName,
+              checkin: stay.checkin,
+              checkout: stay.checkout,
+              adminNote: stay.adminNote || "",
+            }
+          : null,
+      };
+    });
+    const occupied = rows.filter((r) => r.occupied).length;
+    const free = rows.length - occupied;
+    let level = "available";
+    if (occupied === 0) level = "available";
+    else if (free === 0) level = "full";
+    else level = "partial";
+    return { date: dateStr, rows, total: rows.length, free, occupied, level };
+  }
+
+  /** Summary for room type on a date (any unit free?) */
+  function typeSummaryOnDate(roomTypeId, dateStr) {
+    const units = getUnitsForType(roomTypeId);
+    let free = 0;
+    let occupied = 0;
+    units.forEach((u) => {
+      if (findStayForUnitOnDate(roomTypeId, u.unit, dateStr)) occupied++;
+      else free++;
+    });
+    return {
+      free,
+      occupied,
+      total: units.length,
+      open: free > 0,
+      level: occupied === 0 ? "available" : free === 0 ? "full" : "partial",
+    };
+  }
+
+  /** Public: group by room type for a date */
+  function getPublicDayBreakdown(dateStr) {
+    return rooms().map((r) => {
+      const sum = typeSummaryOnDate(r.id, dateStr);
+      const unitRows = getUnitsForType(r.id).map((u) => {
+        const stay = findStayForUnitOnDate(r.id, u.unit, dateStr);
+        return {
+          unit: u.unit,
+          shortLabel: u.shortLabel,
+          available: !stay,
+        };
+      });
+      return {
+        roomTypeId: r.id,
+        floor: r.floor,
+        name: r.name,
+        pax: r.pax,
+        price: r.price,
+        ...sum,
+        units: unitRows,
+      };
+    });
+  }
+
+  // ---- Compatibility with older calendar API ----
+
+  function getStatus(roomTypeId, dateStr) {
+    const sum = typeSummaryOnDate(roomTypeId, dateStr);
+    return sum.open ? "available" : "blocked";
+  }
+
+  function setStatus() {
+    /* deprecated — use addStay / removeStay */
+  }
+
+  function isDateOpen(roomTypeId, dateStr) {
+    return typeSummaryOnDate(roomTypeId, dateStr).open;
+  }
+
+  function isRangeOpen(roomTypeId, checkin, checkout) {
+    if (!checkin || !checkout || checkout <= checkin) return false;
+    const nights = datesBetween(checkin, checkout, true);
+    return nights.every((d) => isDateOpen(roomTypeId, d));
+  }
+
+  function getRangeConflicts(roomTypeId, checkin, checkout) {
+    if (!checkin || !checkout || checkout <= checkin) return [];
+    return datesBetween(checkin, checkout, true).filter((d) => !isDateOpen(roomTypeId, d));
+  }
+
   function monthMatrix(year, monthIndex) {
-    // monthIndex 0-11; returns weeks of date strings or null for padding
     const first = new Date(year, monthIndex, 1);
-    const startPad = first.getDay(); // 0 Sun
+    const startPad = first.getDay();
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     const cells = [];
     for (let i = 0; i < startPad; i++) cells.push(null);
@@ -113,12 +304,8 @@
     return weeks;
   }
 
-  function markPendingFromBooking(roomId, checkin, checkout) {
-    if (!roomId || !checkin || !checkout) return;
-    const nights = datesBetween(checkin, checkout, true);
-    nights.forEach((d) => {
-      if (getStatus(roomId, d) === "available") setStatus(roomId, d, "pending");
-    });
+  function dayLevel(dateStr) {
+    return getDayOccupancy(dateStr).level;
   }
 
   function exportJSON() {
@@ -127,22 +314,46 @@
 
   function importJSON(text) {
     const data = JSON.parse(text);
-    if (typeof data !== "object" || data === null) throw new Error("Invalid data");
-    save(data);
+    if (!data || typeof data !== "object") throw new Error("Invalid data");
+    if (Array.isArray(data.stays)) {
+      save({ stays: data.stays });
+      return;
+    }
+    // legacy map format ignored for stays
+    throw new Error("Expected { stays: [...] }");
   }
 
   function clearAll() {
-    save({});
+    save({ stays: [] });
+  }
+
+  function markPendingFromBooking() {
+    /* no-op: staff assigns real stays in admin */
   }
 
   window.AlmaAvailability = {
     KEY,
+    LEGACY_KEY,
     channelName,
     load,
     save,
+    rooms,
+    roomById,
+    getAllUnits,
+    getUnitsForType,
+    listStays,
+    getStay,
+    addStay,
+    updateStay,
+    removeStay,
+    stayCoversDate,
+    findStayForUnitOnDate,
+    getDayOccupancy,
+    getPublicDayBreakdown,
+    typeSummaryOnDate,
+    dayLevel,
     getStatus,
     setStatus,
-    setRange,
     isDateOpen,
     isRangeOpen,
     getRangeConflicts,
