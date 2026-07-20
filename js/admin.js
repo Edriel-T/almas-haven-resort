@@ -346,7 +346,7 @@
       } else if (toggle) {
         toggle.checked = on;
       }
-      if (label) label.textContent = on ? "● Online" : "Go online";
+      if (label) label.textContent = on ? "● Active Online Agent" : "Active Online Agent";
       // Any admin device that sees "online" should help keep the heartbeat alive
       if (on) startHeartbeat();
       else stopHeartbeat();
@@ -369,11 +369,11 @@
       if (toggle.checked) {
         Live.goOnline("Alma's Haven agent");
         startHeartbeat();
-        toast("You are online on all devices. Guests can chat on the website.");
+        toast("Active Online Agent is on. Guests can chat on the website.");
       } else {
         Live.goOffline();
         stopHeartbeat();
-        toast("You are offline on all devices. Guests will use Facebook.");
+        toast("Active Online Agent is off. Guests will use Facebook.");
       }
       syncToggleUI();
     });
@@ -494,7 +494,7 @@
 
     if (!chats.length) {
       list.innerHTML =
-        '<p class="lp-note" style="padding:1rem">No active chats. Use <strong>Go online</strong> in the menu so guests can reach you.</p>';
+        '<p class="lp-note" style="padding:1rem">No active chats. Turn on <strong>Active Online Agent</strong> in the menu so guests can reach you.</p>';
       return;
     }
 
