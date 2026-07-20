@@ -180,7 +180,7 @@
     try {
       const n = new Notification(title, {
         body,
-        icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>",
+        icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%230d5c68'/><text x='32' y='42' text-anchor='middle' fill='white' font-size='28' font-family='Georgia,serif'>AH</text></svg>",
         tag: "almas-haven-alert",
       });
       setTimeout(() => n.close(), 8000);

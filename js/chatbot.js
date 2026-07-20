@@ -11,7 +11,7 @@
       id: "greeting",
       keywords: ["hi", "hello", "hey", "good morning", "good afternoon", "kumusta", "magandang"],
       answer:
-        "Hello! Welcome to Alma's Haven Resort in Dasol, Pangasinan 🌊 I'm the FAQ assistant. Ask about rates, rooms, check-in, directions, or amenities — or request a live agent for reservations.",
+        "Hello — this is the Alma's Haven FAQ assistant. Ask about rates, rooms, check-in, directions, or amenities. For a booking, you can also request a live agent.",
     },
     {
       id: "rates",
@@ -192,7 +192,7 @@
       id: "reviews",
       keywords: ["review", "rating", "stars", "feedback", "google"],
       answer: () =>
-        `We're rated ${cfg().rating || "4.9"}★ from ${cfg().reviewCount || 24} Google reviews. Guests often mention friendly staff, clean rooms, clear water, peaceful vibe, white sand, and affordability. Many families and friends return year after year.`,
+        `Google rating is ${cfg().rating || "4.9"} from ${cfg().reviewCount || 24} reviews. Guests often mention clean rooms, beachfront sand, clear water, and helpful staff. Full quotes are on the reviews page.`,
     },
     {
       id: "staff",

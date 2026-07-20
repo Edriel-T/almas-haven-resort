@@ -233,7 +233,6 @@
             (err) => console.warn("[LiveAgent] Chats listener:", err.message)
           );
 
-        console.info("[LiveAgent] Cloud sync active");
       }
 
       // One-time pull so a newly opened admin/guest page gets current status fast

@@ -64,12 +64,10 @@
     if (initPromise) return initPromise;
     initPromise = (async () => {
       if (!isConfigured()) {
-        console.info("[AlmaCloud] Firebase not configured — using this browser only.");
         emitStatus();
         return false;
       }
       if (!sdkReady()) {
-        console.warn("[AlmaCloud] Firebase Auth/Firestore SDK not loaded.");
         emitStatus();
         return false;
       }
@@ -110,7 +108,6 @@
         startPublicListeners();
         startLiveRefreshHooks();
         emitStatus();
-        console.info("[AlmaCloud] Connected to Firestore — live sync across devices.");
         return true;
       } catch (err) {
         console.error("[AlmaCloud] Init failed:", err);

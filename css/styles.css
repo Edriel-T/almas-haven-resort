@@ -1,32 +1,32 @@
 /* =========================================================
-   Alma's Haven Resort — handcrafted coastal styles
+   Alma's Haven Resort â€” handcrafted coastal styles
    ========================================================= */
 
 :root {
-  /* Palette */
-  --bg: #f3f8f9;
-  --bg-2: #e8f3f5;
+  /* Palette â€” flat coastal, no neon glow */
+  --bg: #f4f7f8;
+  --bg-2: #e9eef0;
   --paper: #ffffff;
-  --ink: #12282e;
-  --ink-soft: #3a555c;
-  --muted: #6a848c;
-  --line: rgba(18, 40, 46, 0.1);
-  --sea: #178fa3;
-  --sea-deep: #0c6572;
-  --sea-soft: #d9eef2;
-  --sun: #e8963a;
-  --sun-deep: #d07e24;
-  --sand: #f7f0e4;
-  --foam: #f7fbfc;
-  --green: #1a9a52;
-  --green-bg: #d4f5e2;
-  --red: #c43228;
-  --red-bg: #f8d4d0;
-  --shadow: 0 12px 40px rgba(12, 101, 114, 0.1);
-  --radius: 16px;
+  --ink: #1a2b30;
+  --ink-soft: #3d555c;
+  --muted: #6b7f86;
+  --line: rgba(26, 43, 48, 0.12);
+  --sea: #157a8c;
+  --sea-deep: #0d5c68;
+  --sea-soft: #e4eef0;
+  --sun: #c97a2e;
+  --sun-deep: #a8621f;
+  --sand: #f5efe6;
+  --foam: #f8fafb;
+  --green: #1a8a4a;
+  --green-bg: #e3f5ea;
+  --red: #b83a32;
+  --red-bg: #f7e4e2;
+  --shadow: 0 2px 10px rgba(18, 40, 46, 0.06);
+  --radius: 12px;
   --header-h: 72px;
   --max: 1120px;
-  /* Type — standard web scale */
+  /* Type â€” standard web scale */
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-body: "DM Sans", system-ui, -apple-system, sans-serif;
   --text-xs: 0.8125rem;   /* 13px */
@@ -70,10 +70,7 @@ body {
   font-size: var(--text-base);
   font-weight: 400;
   color: var(--ink);
-  background:
-    radial-gradient(ellipse 70% 45% at 8% 0%, rgba(23, 143, 163, 0.08), transparent 55%),
-    radial-gradient(ellipse 50% 35% at 100% 5%, rgba(232, 150, 58, 0.06), transparent 50%),
-    var(--bg);
+  background: var(--bg);
   line-height: var(--leading-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -81,7 +78,7 @@ body {
 }
 
 body.beach-theme {
-  background-attachment: fixed;
+  background: var(--bg);
 }
 
 img,
@@ -206,16 +203,16 @@ p:last-child {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--sea) 0%, var(--sea-deep) 100%);
+  background: var(--sea-deep);
   color: #fff;
-  border-color: transparent;
-  box-shadow: 0 8px 24px rgba(13, 110, 124, 0.28);
+  border-color: var(--sea-deep);
+  box-shadow: none;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #22a8bd 0%, var(--sea) 100%);
+  background: var(--sea);
   color: #fff;
-  border-color: transparent;
+  border-color: var(--sea);
 }
 
 .btn-outline,
@@ -269,16 +266,15 @@ p:last-child {
   inset: 0 0 auto 0;
   height: var(--header-h);
   z-index: 100;
-  background: rgba(243, 248, 249, 0.82);
-  backdrop-filter: blur(16px) saturate(1.15);
+  background: rgba(244, 247, 248, 0.96);
   border-bottom: 1px solid transparent;
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .site-header.scrolled {
-  background: rgba(255, 255, 255, 0.94);
+  background: #fff;
   border-bottom-color: var(--line);
-  box-shadow: 0 4px 24px rgba(12, 101, 114, 0.06);
+  box-shadow: none;
 }
 
 .header-inner {
@@ -307,7 +303,7 @@ p:last-child {
   color: var(--sea-deep);
 }
 
-/* Flat monogram — no gradient badge (avoids “AI app icon” look) */
+/* Flat monogram â€” no gradient badge (avoids â€œAI app iconâ€ look) */
 .logo-mark {
   flex-shrink: 0;
   width: 2.35rem;
@@ -334,7 +330,7 @@ p:last-child {
   display: block;
 }
 
-/* Fallback if pages still have plain “AH” text only */
+/* Fallback if pages still have plain â€œAHâ€ text only */
 .logo-mark:not(:has(svg)) {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
@@ -393,14 +389,14 @@ p:last-child {
 }
 
 .nav-cta {
-  background: linear-gradient(135deg, var(--sea), var(--sea-deep)) !important;
+  background: var(--sea-deep) !important;
   color: #fff !important;
   margin-left: 0.35rem;
-  box-shadow: 0 4px 14px rgba(13, 110, 124, 0.25);
+  box-shadow: none;
 }
 
 .nav-cta:hover {
-  filter: brightness(1.08);
+  background: var(--sea) !important;
 }
 
 .menu-toggle {
@@ -424,16 +420,17 @@ p:last-child {
   border-radius: 2px;
 }
 
-/* ---------- Image placeholders ---------- */
+/* ---------- Image placeholders (flat, no rainbow gradients) ---------- */
 .img-placeholder {
   position: relative;
   margin: 0;
   overflow: hidden;
   border-radius: var(--radius);
-  background: linear-gradient(145deg, #b8e4eb 0%, #7ec8d4 40%, #f0d4a8 100%);
+  background: var(--bg-2);
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  border: 1px solid var(--line);
 }
 
 .img-placeholder img {
@@ -453,16 +450,12 @@ p:last-child {
   gap: 0.3rem;
   padding: 1.25rem;
   text-align: center;
-  color: rgba(15, 44, 51, 0.75);
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.25), transparent 50%),
-    linear-gradient(145deg, rgba(26, 155, 176, 0.35), rgba(240, 160, 75, 0.2));
+  color: var(--muted);
+  background: var(--bg-2);
 }
 
 .img-placeholder__icon {
-  font-size: 2rem;
-  line-height: 1;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
+  display: none;
 }
 
 .img-placeholder__label {
@@ -539,19 +532,18 @@ p:last-child {
   position: relative;
   margin: 0;
   padding: 0;
-  border: none;
-  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   overflow: hidden;
   aspect-ratio: 1;
   cursor: pointer;
-  background: var(--sea-soft);
-  box-shadow: 0 6px 20px rgba(12, 101, 114, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--bg-2);
+  box-shadow: none;
+  transition: border-color 0.15s ease;
 }
 
 .gallery-item:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow);
+  border-color: var(--sea-deep);
 }
 
 .gallery-item img {
@@ -559,11 +551,10 @@ p:last-child {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.35s ease;
 }
 
 .gallery-item:hover img {
-  transform: scale(1.05);
+  transform: none;
 }
 
 .gallery-item__label {
@@ -571,8 +562,8 @@ p:last-child {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 1.5rem 0.65rem 0.55rem;
-  background: linear-gradient(transparent, rgba(8, 40, 48, 0.75));
+  padding: 0.55rem 0.65rem;
+  background: rgba(26, 43, 48, 0.72);
   color: #fff;
   font-size: 0.78rem;
   font-weight: 600;
@@ -594,8 +585,7 @@ p:last-child {
 .gallery-lightbox__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(8, 30, 36, 0.88);
-  backdrop-filter: blur(6px);
+  background: rgba(18, 30, 34, 0.9);
 }
 
 .gallery-lightbox__stage {
@@ -623,9 +613,9 @@ p:last-child {
   width: auto;
   height: auto;
   object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-  background: #0a2a30;
+  border-radius: 8px;
+  box-shadow: none;
+  background: #111;
 }
 
 .gallery-lightbox__figure figcaption {
@@ -680,44 +670,31 @@ p:last-child {
 }
 
 .img-placeholder--hero .img-placeholder__fallback {
-  background:
-    linear-gradient(180deg, transparent 30%, rgba(13, 110, 124, 0.35) 100%),
-    linear-gradient(145deg, #5ec4d4 0%, #1a9bb0 45%, #f0c080 120%);
-  color: white;
+  background: #c5dce1;
+  color: var(--ink-soft);
 }
 
 .img-placeholder--hero .img-placeholder__label,
 .img-placeholder--hero .img-placeholder__hint {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--ink-soft);
 }
 
 .img-placeholder--gallery {
   aspect-ratio: 1;
   min-height: 140px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 10px 30px rgba(13, 110, 124, 0.1);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  background: var(--bg-2);
 }
 
-.img-placeholder--gallery:nth-child(1) {
-  background: linear-gradient(145deg, #7ed4e0, #f5e6c8);
-}
-.img-placeholder--gallery:nth-child(2) {
-  background: linear-gradient(145deg, #f0a04b, #7ec8d4);
-}
-.img-placeholder--gallery:nth-child(3) {
-  background: linear-gradient(145deg, #5cb8a8, #e8d5a8);
-}
-.img-placeholder--gallery:nth-child(4) {
-  background: linear-gradient(145deg, #1a9bb0, #a8d8e0);
-}
-.img-placeholder--gallery.gallery-wide {
-  background: linear-gradient(120deg, #0d6e7c 0%, #3db8c9 50%, #f0c080 100%);
+.img-placeholder--gallery:nth-child(n) {
+  background: var(--bg-2);
 }
 
 .img-placeholder--story {
   aspect-ratio: 4 / 3;
   margin-bottom: 0.85rem;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .img-placeholder--room {
@@ -766,18 +743,11 @@ p:last-child {
   opacity: 0.5;
 }
 
-/* Light wash only — keeps type readable without hiding the photo */
+/* Soft overlay so hero text stays readable over the photo */
 .lp-hero-bg-wash {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(
-      105deg,
-      rgba(238, 248, 249, 0.72) 0%,
-      rgba(238, 248, 249, 0.45) 42%,
-      rgba(238, 248, 249, 0.15) 70%,
-      rgba(238, 248, 249, 0.08) 100%
-    );
+  background: rgba(244, 247, 248, 0.52);
 }
 
 .lp-hero .container {
@@ -892,7 +862,7 @@ p:last-child {
 }
 
 .lp-section-tint {
-  background: linear-gradient(180deg, rgba(232, 243, 245, 0.9), rgba(243, 248, 249, 0.4));
+  background: var(--bg-2);
 }
 
 .lp-head {
@@ -946,7 +916,7 @@ p:last-child {
 }
 
 .lp-list li::before {
-  content: "–";
+  content: "â€“";
   position: absolute;
   left: 0;
   color: var(--sun);
@@ -1021,8 +991,7 @@ p:last-child {
 }
 
 .lp-cta {
-  background:
-    linear-gradient(135deg, rgba(12, 101, 114, 0.96), rgba(23, 143, 163, 0.92));
+  background: var(--sea-deep);
   color: #fff;
   padding: var(--section-y) 0;
   text-align: center;
@@ -1031,11 +1000,7 @@ p:last-child {
 }
 
 .lp-cta::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15), transparent 45%);
-  pointer-events: none;
+  display: none;
 }
 
 .lp-cta h2 {
@@ -1068,19 +1033,20 @@ p:last-child {
 }
 
 .room-card {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: var(--paper);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 28px rgba(13, 110, 124, 0.08);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: none;
+  transition: border-color 0.15s ease;
 }
 
 .room-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 18px 40px rgba(13, 110, 124, 0.16);
+  transform: none;
+  border-color: rgba(13, 92, 104, 0.35);
+  box-shadow: none;
 }
 
 .room-media {
@@ -1089,20 +1055,12 @@ p:last-child {
   overflow: hidden;
 }
 
-.ph-family .img-placeholder__fallback {
-  background: linear-gradient(145deg, rgba(26, 155, 176, 0.55), rgba(126, 200, 212, 0.8));
-}
-.ph-couple .img-placeholder__fallback {
-  background: linear-gradient(145deg, rgba(13, 110, 124, 0.65), rgba(240, 160, 75, 0.45));
-}
-.ph-family6 .img-placeholder__fallback {
-  background: linear-gradient(145deg, rgba(30, 170, 160, 0.5), rgba(240, 200, 140, 0.55));
-}
-.ph-group .img-placeholder__fallback {
-  background: linear-gradient(145deg, rgba(13, 110, 124, 0.7), rgba(240, 120, 80, 0.4));
-}
+.ph-family .img-placeholder__fallback,
+.ph-couple .img-placeholder__fallback,
+.ph-family6 .img-placeholder__fallback,
+.ph-group .img-placeholder__fallback,
 .ph-kubo .img-placeholder__fallback {
-  background: linear-gradient(145deg, rgba(90, 140, 80, 0.55), rgba(212, 180, 100, 0.55));
+  background: var(--bg-2);
 }
 
 .room-badge {
@@ -1516,7 +1474,7 @@ p:last-child {
   min-width: 140px;
 }
 
-/* Accept only for queued chats — never show when active */
+/* Accept only for queued chats â€” never show when active */
 #liveChatAccept[hidden] {
   display: none !important;
 }
@@ -1619,9 +1577,7 @@ p:last-child {
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background:
-    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(23, 143, 163, 0.12), transparent),
-    var(--bg);
+  background: var(--bg);
 }
 
 .admin-login[hidden] {
@@ -1991,7 +1947,7 @@ button.admin-photo-pick.is-in-list {
   background: #c43228;
 }
 
-/* Public calendar days — fixed square click targets */
+/* Public calendar days â€” fixed square click targets */
 .public-cal-grid .cal-day {
   cursor: pointer;
   appearance: none;
@@ -2828,7 +2784,7 @@ textarea:focus {
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   min-height: 280px;
   background: var(--bg-2);
 }
@@ -2842,7 +2798,7 @@ textarea:focus {
 
 /* Footer */
 .site-footer {
-  background: linear-gradient(180deg, #0a3d46, #072e35);
+  background: #0d3d45;
   color: rgba(243, 248, 249, 0.85);
   padding: var(--space-6) 0 var(--space-5);
 }
@@ -2891,13 +2847,11 @@ textarea:focus {
   letter-spacing: 0.02em;
 }
 
-/* Scroll reveal */
+/* Scroll reveal â€” subtle, not theatrical */
 .reveal {
   opacity: 0;
-  transform: translateY(22px);
-  transition:
-    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(8px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
   transition-delay: var(--reveal-delay, 0ms);
 }
 
@@ -2980,7 +2934,7 @@ textarea:focus {
 }
 
 .faq-item[open] summary::after {
-  content: "−";
+  content: "âˆ’";
 }
 
 .faq-item summary:hover {
@@ -3071,7 +3025,7 @@ textarea:focus {
 }
 
 .checklist li::before {
-  content: "✓";
+  content: "âœ“";
   position: absolute;
   left: 0;
   color: var(--sea);
@@ -3121,8 +3075,11 @@ textarea:focus {
 }
 
 .amenity-icon {
-  font-size: 1.4rem;
-  margin-bottom: 0.45rem;
+  display: none; /* text-first cards; no decorative emoji */
+}
+
+.amenity-card h3 {
+  margin-top: 0;
 }
 
 .review-grid {
@@ -3584,7 +3541,7 @@ body.modal-open {
   overflow: hidden;
 }
 
-/* Book form (name + when → Facebook) */
+/* Book form (name + when â†’ Facebook) */
 .book-form-card h2 {
   margin: 0 0 0.25rem;
   font-size: 1.55rem;
@@ -3809,7 +3766,7 @@ body.modal-open {
   margin: 0.35rem 0;
 }
 
-/* Title only — not strong tags inside the steps */
+/* Title only â€” not strong tags inside the steps */
 .fb-instruct-box > strong {
   display: block;
   font-size: 0.88rem;
@@ -3941,7 +3898,7 @@ body.modal-open {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1.1rem 0.9rem 1rem;
-  background: linear-gradient(180deg, #0c6572 0%, #0a4f59 100%);
+  background: #0d5c68;
   color: #f4efe6;
   z-index: 40;
   overflow-y: auto;
@@ -4666,12 +4623,7 @@ label {
 
   .lp-hero-bg-wash {
     background:
-      linear-gradient(
-        180deg,
-        rgba(238, 248, 249, 0.55) 0%,
-        rgba(238, 248, 249, 0.4) 50%,
-        rgba(238, 248, 249, 0.5) 100%
-      );
+      background: rgba(244, 247, 248, 0.6);
   }
 
   .lp-hero-panel {
@@ -4970,9 +4922,7 @@ label {
   display: grid;
   place-items: center;
   padding: 3.5rem 0 4rem;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(23, 143, 163, 0.12), transparent 70%),
-    var(--bg, #eef3f5);
+  background: var(--bg, #f4f7f8);
 }
 
 .error-page-inner {
@@ -5074,7 +5024,7 @@ label {
 }
 
 /*
- * Admin mobile layout — MUST stay at end of file.
+ * Admin mobile layout â€” MUST stay at end of file.
  * Base .admin-shell styles are defined mid-file; without this trailing
  * block they override earlier @media rules and break phones
  * (hamburger hidden, 260px sidebar column stuck on screen).
@@ -5092,7 +5042,7 @@ label {
     touch-action: none;
   }
 
-  /* Single column shell — sidebar is a drawer, not a grid track */
+  /* Single column shell â€” sidebar is a drawer, not a grid track */
   .admin-shell:not([hidden]) {
     display: block !important;
     grid-template-columns: none !important;
@@ -5362,7 +5312,7 @@ label {
     text-align: center;
   }
 
-  /* Inbox stats — keep 3 columns, not 1 */
+  /* Inbox stats â€” keep 3 columns, not 1 */
   .admin-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 0.4rem;
