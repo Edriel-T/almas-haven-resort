@@ -1,27 +1,17 @@
 /**
  * ============================================================
- * ROOMS CONFIG — edit this file to update room listings & photos
+ * ROOMS CONFIG — staff/dev only (not shown to website visitors)
  * ============================================================
- * Used by: rooms.html (full list) and booking / calendar / FAQ.
- *
- * How to change a room photo:
- *  1. Put the file in /Images (e.g. Images/Couple room.jpg)
- *  2. Update the "image" path below (and "images" array if needed)
- *
- * How to change price / pax / amenities:
- *  Edit the matching room object only — leave "id" the same.
- *
- * Load order: after js/config.js
- * ============================================================
+ * Load after js/config.js
  */
 (function () {
   const rooms = [
     {
       id: "1f-4pax",
       floor: "1st floor",
-      name: "Family Room (4 pax)",
+      name: "Family Room (5 pax)",
       count: 3,
-      pax: 4,
+      pax: 5,
       price: 3500,
       privateCr: true,
       hasTv: false,
@@ -50,7 +40,6 @@
       hasTv: false,
       hasRef: false,
       notes: "Perfect for couples · ground floor",
-      // Updated couple room photo
       image: "Images/Couple room.jpg",
       images: ["Images/Couple room.jpg"],
       amenities: [
@@ -63,10 +52,10 @@
     {
       id: "2f-6pax",
       floor: "2nd floor",
-      name: "Family Room (6 pax)",
+      name: "Family Room (7 pax)",
       count: 4,
-      pax: 6,
-      price: 4500,
+      pax: 7,
+      price: 4000,
       privateCr: true,
       hasTv: false,
       hasRef: false,
@@ -89,7 +78,7 @@
       name: "Big Group Room (15 pax)",
       count: 2,
       pax: 15,
-      price: 9500,
+      price: 9000,
       privateCr: true,
       hasTv: true,
       hasRef: true,
@@ -114,17 +103,16 @@
     {
       id: "kubo-4pax",
       floor: "Kubo",
-      name: "Kubo Room (4 pax)",
+      name: "Kubo Room (5 pax)",
       count: 1,
-      pax: 4,
+      pax: 5,
       price: 3500,
       privateCr: false,
       hasTv: false,
       hasRef: false,
       notes: "No private CR · air-conditioned",
-      // No dedicated kubo photo yet — using exterior. Replace when you add Images/Kubo room.jpg
-      image: "Images/Resort Exterior01.jpg",
-      images: ["Images/Resort Exterior01.jpg", "Images/Gallery Images.jpg"],
+      image: "Images/Kubo room - 5pax.jpg",
+      images: ["Images/Kubo room - 5pax.jpg"],
       amenities: [
         "Air-conditioned",
         "No private CR",

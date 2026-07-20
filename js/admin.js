@@ -532,7 +532,7 @@
     document.getElementById("photoPathsInput").value = using.join("\n");
     document.getElementById("photoDefaultsHint").textContent = over.length
       ? "Using custom list from Admin (overrides defaults)."
-      : "Using default photos from rooms-config.js. Save a custom list to override.";
+      : "Using default photos. Save a custom list to override.";
     previewPhotos();
   }
 
